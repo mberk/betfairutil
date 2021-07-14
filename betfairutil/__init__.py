@@ -40,3 +40,35 @@ def get_runner_book_from_market_book(
     for runner in market_book["runners"]:
         if runner["selectionId"] == selection_id and runner["handicap"] == handicap:
             return return_type(**runner)
+
+
+def is_market_book(x: Any) -> bool:
+    """
+    Test whether x is a betfairlightweight MarketBook object or a dictionary (mapping) with all required fields to construct one (as would be generated when using betfairlightweight in lightweight mode)
+
+    :param x: The object to test
+    :returns: True if x meets the above condition otherwise False
+    """
+    if type(x) is MarketBook:
+        return True
+    try:
+        MarketBook(**x)
+        return True
+    except TypeError:
+        return False
+
+
+def is_runner_book(x: Any) -> bool:
+    """
+    Test whether x is a betfairlightweight RunnerBook object or a dictionary (mapping) with all required fields to construct one (as would be generated when using betfairlightweight in lightweight mode)
+
+    :param x: The object to test
+    :returns: True if x meets the above condition otherwise False
+    """
+    if type(x) is RunnerBook:
+        return True
+    try:
+        RunnerBook(**x)
+        return True
+    except TypeError:
+        return False
