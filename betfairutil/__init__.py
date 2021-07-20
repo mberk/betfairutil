@@ -27,6 +27,13 @@ def filter_runners(
         yield return_type(**runner)
 
 
+def iterate_active_runners(
+    market_book: Union[Dict[str, Any], MarketBook]
+) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    for runner in filter_runners(market_book, "ACTIVE", []):
+        yield runner
+
+
 def get_runner_book_from_market_book(
     market_book: Union[Dict[str, Any], MarketBook],
     selection_id: Optional[int] = None,
