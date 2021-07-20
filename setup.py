@@ -23,4 +23,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.5",
+    extras_require={"files": ["smart_open"]},
 )

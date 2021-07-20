@@ -7,9 +7,21 @@ Utility functions for working with Betfair data
 * [betfairlightweight](https://github.com/liampauling/betfair)
 * pandas
 
+Optionally, for working with Betfair prices files:
+
+* smart_open
+
 # Installation
 
 Requires Python 3.5 or above.
+
+If working with Betfair prices files:
+
+```
+pip install git+https://github.com/mberk/betfairutil.git@master#egg=betfairutil[files]
+```
+
+Otherwise:
 
 ```
 pip install git+https://github.com/mberk/betfairutil.git@master#egg=betfairutil

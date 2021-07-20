@@ -1,6 +1,8 @@
 from typing import Any, Dict, Optional, Union
 
 import pandas as pd
+from betfairlightweight import APIClient
+from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import RunnerBook
 
@@ -120,3 +122,34 @@ def market_book_to_data_frame(
             runner.get("ex", {}).get(f"availableTo{side}", [])
         )
     )
+
+
+def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
+    """
+    Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
+
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
+    :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
+
+      - market_id: The Betfair market ID
+      - inplay: Whether the market is in play
+      - selection_id: The selection ID of the runner
+      - handicap: The handicap of the runner
+      - side: Either 'Back' or 'Lay'
+      - depth: The depth of this point on the ladder
+      - price: The price of this point on the ladder
+      - size: The amount of volume available at this point on the ladder
+      - publish_time: The publish time of the market book corresponding to this data point
+    """
+    import smart_open
+    from unittest.mock import patch
+
+    trading = APIClient(username="", password="", app_key="")
+    stream = trading.streaming.create_historical_generator_stream(
+        directory=path_to_prices_file,
+        listener=StreamListener(max_latency=None, lightweight=True),
+    )
+
+    with patch("builtins.open", smart_open.open):
+        g = stream.get_generator()
+        return pd.concat(market_book_to_data_frame(mbs[0]) for mbs in g())
