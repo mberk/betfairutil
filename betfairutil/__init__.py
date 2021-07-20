@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Union
 
+import pandas as pd
 from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import RunnerBook
 
@@ -72,3 +73,50 @@ def is_runner_book(x: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+def market_book_to_data_frame(
+    market_book: Union[Dict[str, Any], MarketBook]
+) -> pd.DataFrame:
+    """
+    Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
+    runner
+
+    :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :return: A data frame with the following columns:
+
+      - market_id: The Betfair market ID
+      - inplay: Whether the market is in play
+      - selection_id: The selection ID of the runner
+      - handicap: The handicap of the runner
+      - side: Either 'Back' or 'Lay'
+      - depth: The depth of this point on the ladder
+      - price: The price of this point on the ladder
+      - size: The amount of volume available at this point on the ladder
+      - publish_time (Optional): If the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) then the publish time of the market book. Otherwise this column will not be present
+    """
+    if type(market_book) is MarketBook:
+        market_book = market_book._data
+
+    return pd.DataFrame(
+        {
+            "market_id": market_book["marketId"],
+            "inplay": market_book["inplay"],
+            "selection_id": runner["selectionId"],
+            "handicap": runner["handicap"],
+            "side": side,
+            "depth": depth,
+            "price": price_size["price"],
+            "size": price_size["size"],
+            **(
+                {"publish_time": market_book["publishTime"]}
+                if "publishTime" in market_book
+                else {}
+            ),
+        }
+        for runner in market_book["runners"]
+        for side in ["Back", "Lay"]
+        for depth, price_size in enumerate(
+            runner.get("ex", {}).get(f"availableTo{side}", [])
+        )
+    )

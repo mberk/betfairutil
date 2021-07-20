@@ -5,6 +5,7 @@ Utility functions for working with Betfair data
 # Dependencies
 
 * [betfairlightweight](https://github.com/liampauling/betfair)
+* pandas
 
 # Installation
 
