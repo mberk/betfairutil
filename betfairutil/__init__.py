@@ -1,10 +1,30 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Generator, Optional, Sequence, Union
 
 import pandas as pd
 from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import RunnerBook
+
+
+def filter_runners(
+    market_book: Union[Dict[str, Any], MarketBook],
+    status: str,
+    excluded_selection_ids: Sequence[int],
+) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    if type(market_book) is dict:
+        runners = market_book["runners"]
+        return_type = dict
+    else:
+        runners = market_book.runners
+        return_type = RunnerBook
+
+    for runner in runners:
+        if runner["status"] != status:
+            continue
+        if runner["selectionId"] in excluded_selection_ids:
+            continue
+        yield return_type(**runner)
 
 
 def get_runner_book_from_market_book(
