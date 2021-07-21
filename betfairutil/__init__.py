@@ -1,3 +1,4 @@
+import enum
 from typing import Any, Dict, Generator, Optional, Sequence, Union
 
 import pandas as pd
@@ -5,6 +6,22 @@ from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import RunnerBook
+
+
+class Side(enum.Enum):
+    BACK = 'Back'
+    LAY = 'Lay'
+
+    @property
+    def other_side(self):
+        if self is Side.BACK:
+            return Side.LAY
+        else:
+            return Side.BACK
+
+    @property
+    def ex_key(self):
+        return f'availableTo{self.value}'
 
 
 def filter_runners(
