@@ -98,6 +98,10 @@ def get_runner_book_from_market_book(
             return return_type(**runner)
 
 
+def get_best_price_size(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Dict[str, Union[int, float]]]:
+    return next(iter(runner.get('ex', {}).get(side.ex_key, [])))
+
+
 def is_market_book(x: Any) -> bool:
     """
     Test whether x is a betfairlightweight MarketBook object or a dictionary (mapping) with all required fields to construct one (as would be generated when using betfairlightweight in lightweight mode)
