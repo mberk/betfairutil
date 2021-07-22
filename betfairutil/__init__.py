@@ -8,6 +8,7 @@ import pandas as pd
 from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
+from betfairlightweight.resources.bettingresources import PriceSize
 from betfairlightweight.resources.bettingresources import RunnerBook
 
 BETFAIR_TICKS = [
@@ -253,3 +254,56 @@ def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
         return pd.concat(market_book_to_data_frame(mbs[0]) for mbs in g())
+
+
+def remove_bet_from_runner_book(
+    runner_book: Union[Dict[str, Any], RunnerBook],
+    price: Union[int, float],
+    size: Union[int, float],
+    available_side: Side,
+) -> Union[Dict[str, Any], RunnerBook]:
+    """
+    Create a new runner book with a bet removed from the order book
+
+    :param runner_book: The runner book from which the bet is going to be removed either as a dictionary or betfairlightweight RunnerBook object
+    :param price: The price of the bet
+    :param size: The size of the bet
+    :param available_side: The side of the order book that the bet appears on
+    :return: A new runner book with the bet removed. The type of the return value will reflect the type of runner_book. If the given price is not available on the given side then the new runner book will be identical to runner_book
+    :raises: ValueError if size is greater than the size present in the order book
+    """
+    runner_book = deepcopy(runner_book)
+    if type(runner_book) is dict:
+        for price_size in runner_book["ex"][available_side.ex_key]:
+            if price_size["price"] == price and price_size["size"] < size:
+                raise ValueError(
+                    f'size = {size} but only {price_size["size"]} available to {available_side.ex_key} at {price_size["price"]}'
+                )
+
+        runner_book["ex"][available_side.ex_key] = [
+            {
+                "price": price_size["price"],
+                "size": price_size["size"]
+                - (size if price_size["price"] == price else 0),
+            }
+            for price_size in runner_book["ex"][available_side.ex_key]
+            # If price_size['price'] == price and price_size['size'] == size then it should be removed from the list completely
+            if price_size["price"] != price or price_size["size"] != size
+        ]
+    else:
+        for price_size in getattr(runner_book.ex, available_side.ex_key):
+            if price_size.price == price and price_size.size < size:
+                raise ValueError(
+                    f"size = {size} but only {price_size.size} available to {available_side.ex_key} at {price_size.price}"
+                )
+
+        setattr(
+            runner_book.ex,
+            available_side.ex_key,
+            [
+                PriceSize(price=price_size.price, size=price_size.size)
+                for price_size in getattr(runner_book.ex, available_side.ex_key)
+                if price_size.price != price or price_size.size != size
+            ],
+        )
+    return runner_book
