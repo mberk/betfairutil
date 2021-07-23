@@ -3346,3 +3346,105 @@ def virtualise_two_runner_price(
         return raw_price
     virtual_price = make_price_betfair_valid(raw_price, side.other_side)
     return virtual_price
+
+
+def virtualise_market_book(
+    market_book: Union[Dict[str, Any], MarketBook],
+    rollup: Union[int, float] = 1,
+    ladder_levels: int = 10,
+) -> Union[Dict[str, Any], MarketBook]:
+    if type(market_book) is dict:
+        return_type = dict
+    else:
+        market_book = market_book._data
+        return_type = MarketBook
+
+    if market_book["marketDefinition"]["numberOfWinners"] > 1:
+        raise NotImplementedError(
+            "Virtualisation not yet implemented for markets with multiple winners"
+        )
+
+    if market_book["marketDefinition"]["bettingType"] != "ODDS":
+        raise NotImplementedError(
+            "Virtualisation not yet implemented for handicap markets"
+        )
+
+    # We need to create a working copy because we're going to iteratively remove liquidity as we build the virtual prices
+    market_book_working_copy = deepcopy(market_book)
+
+    new_runners = []
+    for runner in market_book["runners"]:
+        new_runner = deepcopy(runner)
+        if runner["status"] == "ACTIVE":
+            for side in Side:
+                virtual_bets = []
+                while True:
+                    probability_sum = 0
+                    constant_of_proportionality = None
+                    for other_runner in iterate_other_active_runners(
+                        market_book_working_copy, runner["selectionId"]
+                    ):
+                        best_price_size = get_best_price_size(
+                            other_runner, side.other_side
+                        )
+                        if best_price_size is not None:
+                            if (
+                                constant_of_proportionality is None
+                                or (best_price_size["price"] * best_price_size["size"])
+                                < constant_of_proportionality
+                            ):
+                                constant_of_proportionality = (
+                                    best_price_size["price"] * best_price_size["size"]
+                                )
+                            probability_sum += 1.0 / best_price_size["price"]
+                    cross_match_price = make_price_betfair_valid(
+                        1.0 / (1.0 - probability_sum), side=side.other_side
+                    )
+                    if cross_match_price is None:
+                        break
+                    cross_match_size = round(
+                        constant_of_proportionality / cross_match_price, 2
+                    )
+                    virtual_bets.append(
+                        {"price": cross_match_price, "size": cross_match_size}
+                    )
+                    for other_runner in iterate_other_active_runners(
+                        market_book_working_copy, runner["selectionId"]
+                    ):
+                        best_price_size = get_best_price_size(
+                            other_runner, side.other_side
+                        )
+
+                # TODO: Insert virtual bets into runner
+
+        new_runners.append(new_runner)
+
+    # Do rollup
+    for runner in new_runners:
+        for side in Side:
+            rolled_up_prices = []
+            cumulative_size = 0
+            for price_size in runner["ex"][side.ex_key]:
+                cumulative_size += price_size["size"]
+                if cumulative_size >= rollup:
+                    rolled_up_prices.append(
+                        {
+                            "price": price_size["price"],
+                            "size": round(cumulative_size, 2),
+                        }
+                    )
+                    cumulative_size = 0
+            runner["ex"][side.ex_key] = rolled_up_prices
+
+    # Apply ladder_levels restriction
+    for runner in new_runners:
+        for side in Side:
+            number_of_ladder_levels_to_keep = min(
+                ladder_levels, len(runner["ex"][side.ex_key])
+            )
+            runner["ex"][side.ex_key] = runner["ex"][side.ex_key][
+                :number_of_ladder_levels_to_keep
+            ]
+
+    new_market_book = dict(market_book, runners=new_runners)
+    return return_type(**new_market_book)
