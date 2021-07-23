@@ -1,3 +1,4 @@
+import datetime
 import enum
 from bisect import bisect_left
 from bisect import bisect_right
@@ -514,13 +515,15 @@ def make_price_betfair_valid(
 
 
 def market_book_to_data_frame(
-    market_book: Union[Dict[str, Any], MarketBook]
+    market_book: Union[Dict[str, Any], MarketBook],
+    should_format_publish_time: bool = False,
 ) -> pd.DataFrame:
     """
     Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
     runner
 
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
     :return: A data frame with the following columns:
 
       - market_id: The Betfair market ID
@@ -536,7 +539,7 @@ def market_book_to_data_frame(
     if type(market_book) is MarketBook:
         market_book = market_book._data
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         {
             "market_id": market_book["marketId"],
             "inplay": market_book["inplay"],
@@ -545,12 +548,7 @@ def market_book_to_data_frame(
             "side": side,
             "depth": depth,
             "price": price_size["price"],
-            "size": price_size["size"],
-            **(
-                {"publish_time": market_book["publishTime"]}
-                if "publishTime" in market_book
-                else {}
-            ),
+            "size": price_size["size"]
         }
         for runner in market_book["runners"]
         for side in ["Back", "Lay"]
@@ -558,6 +556,18 @@ def market_book_to_data_frame(
             runner.get("ex", {}).get(f"availableTo{side}", [])
         )
     )
+
+    if "publishTime" in market_book:
+        publish_time = market_book["publishTime"]
+        if should_format_publish_time:
+            publish_time = (
+                datetime.datetime.utcfromtimestamp(publish_time / 1000)
+                .replace(tzinfo=datetime.timezone.utc)
+                .strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            )
+        df["publish_time"] = publish_time
+
+    return df
 
 
 def prices_file_to_csv_file(path_to_prices_file: str, path_to_csv_file: str) -> None:
