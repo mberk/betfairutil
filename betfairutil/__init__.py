@@ -648,8 +648,9 @@ def prices_file_to_data_frame(
             df["runner_name"] = df["selection_id"].apply(
                 selection_id_to_runner_name_map.get
             )
-        # Fix selection_id type
+        # Fix integer column types
         df["selection_id"] = df["selection_id"].astype(int)
+        df["depth"] = df["depth"].astype(int)
         return df
 
 
