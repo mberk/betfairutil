@@ -586,11 +586,17 @@ def prices_file_to_csv_file(path_to_prices_file: str, path_to_csv_file: str) -> 
     prices_file_to_data_frame(path_to_prices_file).to_csv(path_to_csv_file, index=False)
 
 
-def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
+def prices_file_to_data_frame(
+    path_to_prices_file: str,
+    should_output_runner_names: bool = False,
+    should_format_publish_time: bool = False,
+) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
 
     :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
+    :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed
+    :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
 
       - market_id: The Betfair market ID
@@ -602,6 +608,7 @@ def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
       - price: The price of this point on the ladder
       - size: The amount of volume available at this point on the ladder
       - publish_time: The publish time of the market book corresponding to this data point
+      - runner_name: (Optional): If should_output_runner_names is True then this column will contain the name of the runner
     """
     import smart_open
     from unittest.mock import patch
@@ -614,7 +621,23 @@ def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
 
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
-        return pd.concat(market_book_to_data_frame(mbs[0]) for mbs in g())
+        first_market_book = next(g())[0]
+        df = pd.concat(market_book_to_data_frame(mbs[0]) for mbs in g())
+        if should_format_publish_time:
+            df["publish_time"] = pd.to_datetime(
+                df["publish_time"], unit="ms", utc=True
+            ).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        if should_output_runner_names:
+            selection_id_to_runner_name_map = {
+                runner["id"]: runner["name"]
+                for runner in first_market_book.get("marketDefinition", {}).get(
+                    "runners", []
+                )
+            }
+            df["runner_name"] = df["selection_id"].apply(
+                selection_id_to_runner_name_map.get
+            )
+        return df
 
 
 def remove_bet_from_runner_book(
