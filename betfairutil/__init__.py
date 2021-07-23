@@ -582,8 +582,12 @@ def market_book_to_data_frame(
     return df
 
 
-def prices_file_to_csv_file(path_to_prices_file: str, path_to_csv_file: str) -> None:
-    prices_file_to_data_frame(path_to_prices_file).to_csv(path_to_csv_file, index=False)
+def prices_file_to_csv_file(
+    path_to_prices_file: str, path_to_csv_file: str, **kwargs
+) -> None:
+    prices_file_to_data_frame(path_to_prices_file, **kwargs).to_csv(
+        path_to_csv_file, index=False
+    )
 
 
 def prices_file_to_data_frame(
