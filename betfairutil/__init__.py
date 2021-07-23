@@ -560,6 +560,10 @@ def market_book_to_data_frame(
     )
 
 
+def prices_file_to_csv_file(path_to_prices_file: str, path_to_csv_file: str) -> None:
+    prices_file_to_data_frame(path_to_prices_file).to_csv(path_to_csv_file, index=False)
+
+
 def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
