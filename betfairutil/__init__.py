@@ -516,6 +516,7 @@ def make_price_betfair_valid(
 
 def market_book_to_data_frame(
     market_book: Union[Dict[str, Any], MarketBook],
+    should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
 ) -> pd.DataFrame:
     """
@@ -523,7 +524,8 @@ def market_book_to_data_frame(
     runner
 
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
-    :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
+    :param should_output_runner_names: Should the data frame contain a runner name column. This requires the market book to have been generated from streaming data and contain a MarketDefinition
+    :param should_format_publish_time: Should the publish time (if present in the market book) be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
     :return: A data frame with the following columns:
 
       - market_id: The Betfair market ID
@@ -535,6 +537,7 @@ def market_book_to_data_frame(
       - price: The price of this point on the ladder
       - size: The amount of volume available at this point on the ladder
       - publish_time (Optional): If the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) then the publish time of the market book. Otherwise this column will not be present
+      - runner_name: (Optional): If should_output_runner_names is True then this column will be present. It will be populated if the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) otherwise all entries will be None
     """
     if type(market_book) is MarketBook:
         market_book = market_book._data
@@ -548,7 +551,7 @@ def market_book_to_data_frame(
             "side": side,
             "depth": depth,
             "price": price_size["price"],
-            "size": price_size["size"]
+            "size": price_size["size"],
         }
         for runner in market_book["runners"]
         for side in ["Back", "Lay"]
@@ -566,6 +569,15 @@ def market_book_to_data_frame(
                 .strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             )
         df["publish_time"] = publish_time
+
+    if should_output_runner_names:
+        selection_id_to_runner_name_map = {
+            runner["id"]: runner["name"]
+            for runner in market_book.get("marketDefinition", {}).get("runners", [])
+        }
+        df["runner_name"] = df["selection_id"].apply(
+            selection_id_to_runner_name_map.get
+        )
 
     return df
 
