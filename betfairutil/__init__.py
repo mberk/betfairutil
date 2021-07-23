@@ -518,6 +518,7 @@ def market_book_to_data_frame(
     market_book: Union[Dict[str, Any], MarketBook],
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
+    max_depth: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
@@ -526,6 +527,7 @@ def market_book_to_data_frame(
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
     :param should_output_runner_names: Should the data frame contain a runner name column. This requires the market book to have been generated from streaming data and contain a MarketDefinition
     :param should_format_publish_time: Should the publish time (if present in the market book) be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
+    :param max_depth: Optionally limit the depth of the price ladder
     :return: A data frame with the following columns:
 
       - market_id: The Betfair market ID
@@ -558,6 +560,7 @@ def market_book_to_data_frame(
         for depth, price_size in enumerate(
             runner.get("ex", {}).get(f"availableTo{side}", [])
         )
+        if max_depth is None or depth <= max_depth
     )
 
     if "publishTime" in market_book:
@@ -594,6 +597,7 @@ def prices_file_to_data_frame(
     path_to_prices_file: str,
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
+    max_depth: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
@@ -601,6 +605,7 @@ def prices_file_to_data_frame(
     :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
     :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
+    :param max_depth: Optionally limit the depth of the price ladder
     :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
 
       - market_id: The Betfair market ID
@@ -626,7 +631,9 @@ def prices_file_to_data_frame(
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
         first_market_book = next(g())[0]
-        df = pd.concat(market_book_to_data_frame(mbs[0]) for mbs in g())
+        df = pd.concat(
+            market_book_to_data_frame(mbs[0], max_depth=max_depth) for mbs in g()
+        )
         if should_format_publish_time:
             df["publish_time"] = pd.to_datetime(
                 df["publish_time"], unit="ms", utc=True
