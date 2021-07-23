@@ -582,7 +582,7 @@ def prices_file_to_data_frame(path_to_prices_file: str) -> pd.DataFrame:
 
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
-        directory=path_to_prices_file,
+        file_path=path_to_prices_file,
         listener=StreamListener(max_latency=None, lightweight=True),
     )
 
