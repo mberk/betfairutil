@@ -3,7 +3,7 @@ import enum
 from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
-from typing import Any, Dict, Generator, Optional, Sequence, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Union
 
 import pandas as pd
 from betfairlightweight import APIClient
@@ -652,6 +652,23 @@ def prices_file_to_data_frame(
         df["selection_id"] = df["selection_id"].astype(int)
         df["depth"] = df["depth"].astype(int)
         return df
+
+
+def read_prices_file(
+    path_to_prices_file: str, lightweight: bool = True
+) -> Union[List[MarketBook], List[Dict[str, Any]]]:
+    import smart_open
+    from unittest.mock import patch
+
+    trading = APIClient(username="", password="", app_key="")
+    stream = trading.streaming.create_historical_generator_stream(
+        file_path=path_to_prices_file,
+        listener=StreamListener(max_latency=None, lightweight=lightweight),
+    )
+
+    with patch("builtins.open", smart_open.open):
+        g = stream.get_generator()
+        return list(mbs[0] for mbs in g())
 
 
 def remove_bet_from_runner_book(
