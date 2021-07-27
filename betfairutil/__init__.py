@@ -462,8 +462,11 @@ def get_runner_book_from_market_book(
 
 def get_best_price_size(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
-) -> Optional[Dict[str, Union[int, float]]]:
-    return next(iter(runner.get("ex", {}).get(side.ex_key, [])))
+) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    if type(runner) is RunnerBook:
+        return next(iter(getattr(runner.ex, side.ex_key)), None)
+    else:
+        return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
 def is_market_book(x: Any) -> bool:
