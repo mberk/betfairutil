@@ -382,7 +382,9 @@ class Side(enum.Enum):
         return f"availableTo{self.value}"
 
 
-def calculate_book_percentage(market_book: Union[Dict[str, Any], MarketBook], side: Side) -> float:
+def calculate_book_percentage(
+    market_book: Union[Dict[str, Any], MarketBook], side: Side
+) -> float:
     implied_probabilities = []
     for runner in iterate_active_runners(market_book):
         best_price_size = get_best_price_size(runner, side)
@@ -390,7 +392,7 @@ def calculate_book_percentage(market_book: Union[Dict[str, Any], MarketBook], si
             if type(best_price_size) is PriceSize:
                 best_price = best_price_size.price
             else:
-                best_price = best_price_size['price']
+                best_price = best_price_size["price"]
         else:
             best_price = None
 
@@ -502,14 +504,14 @@ def is_runner_book(x: Any) -> bool:
 
 
 def iterate_active_runners(
-        market_book: Union[Dict[str, Any], MarketBook]
+    market_book: Union[Dict[str, Any], MarketBook]
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
     for runner in filter_runners(market_book, "ACTIVE", []):
         yield runner
 
 
 def iterate_other_active_runners(
-        market_book: Union[Dict[str, Any], MarketBook], selection_id: int
+    market_book: Union[Dict[str, Any], MarketBook], selection_id: int
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
     for runner in iterate_active_runners(market_book):
         if runner["selectionId"] == selection_id:
