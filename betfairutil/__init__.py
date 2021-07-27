@@ -382,6 +382,26 @@ class Side(enum.Enum):
         return f"availableTo{self.value}"
 
 
+def calculate_book_percentage(market_book: Union[Dict[str, Any], MarketBook], side: Side) -> float:
+    implied_probabilities = []
+    for runner in iterate_active_runners(market_book):
+        best_price_size = get_best_price_size(runner, side)
+        if best_price_size is not None:
+            if type(best_price_size) is PriceSize:
+                best_price = best_price_size.price
+            else:
+                best_price = best_price_size['price']
+        else:
+            best_price = None
+
+        if best_price is not None:
+            implied_probabilities.append(1.0 / best_price)
+        else:
+            implied_probabilities.append(1.0 if side is Side.BACK else 0.0)
+
+    return sum(implied_probabilities)
+
+
 def filter_runners(
     market_book: Union[Dict[str, Any], MarketBook],
     status: str,
