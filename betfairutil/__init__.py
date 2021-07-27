@@ -422,22 +422,6 @@ def filter_runners(
         yield return_type(**runner)
 
 
-def iterate_active_runners(
-    market_book: Union[Dict[str, Any], MarketBook]
-) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
-    for runner in filter_runners(market_book, "ACTIVE", []):
-        yield runner
-
-
-def iterate_other_active_runners(
-    market_book: Union[Dict[str, Any], MarketBook], selection_id: int
-) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
-    for runner in iterate_active_runners(market_book):
-        if runner["selectionId"] == selection_id:
-            continue
-        yield runner
-
-
 def get_runner_book_from_market_book(
     market_book: Union[Dict[str, Any], MarketBook],
     selection_id: Optional[int] = None,
@@ -512,6 +496,22 @@ def is_runner_book(x: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+def iterate_active_runners(
+        market_book: Union[Dict[str, Any], MarketBook]
+) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    for runner in filter_runners(market_book, "ACTIVE", []):
+        yield runner
+
+
+def iterate_other_active_runners(
+        market_book: Union[Dict[str, Any], MarketBook], selection_id: int
+) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    for runner in iterate_active_runners(market_book):
+        if runner["selectionId"] == selection_id:
+            continue
+        yield runner
 
 
 def make_price_betfair_valid(
