@@ -429,6 +429,7 @@ def get_runner_book_from_market_book(
     selection_id: Optional[int] = None,
     runner_name: Optional[str] = None,
     handicap: float = 0.0,
+    return_type: Optional[type] = None,
 ) -> Optional[Union[Dict[str, Any], RunnerBook]]:
     """
     Extract a runner book from the given market book. The runner can be identified either by ID or name
@@ -437,17 +438,20 @@ def get_runner_book_from_market_book(
     :param selection_id: Optionally identify the runner book to extract by the runner's ID
     :param runner_name: Alternatively identify the runner book to extract by the runner's name
     :param handicap: The handicap of the desired runner book
-    :returns: The corresponding runner book if it can be found in the market book, otherwise None. The type of the return value will reflect the type of market_book; if market_book is a dictionary then the return value is a dictionary. If market_book is a MarketBook object then the return value will be a RunnerBook object
+    :param return_type: Optionally specify the return type to be either a dict or RunnerBook. If not given then the return type will reflect the type of market_book; if market_book is a dictionary then the return value is a dictionary. If market_book is a MarketBook object then the return value will be a RunnerBook object
+    :returns: The corresponding runner book if it can be found in the market book, otherwise None. The type of the return value will depend on the return_type parameter
     :raises: ValueError if both selection_id and runner_name are given. Only one is required to uniquely identify the runner book
     """
     if selection_id is not None and runner_name is not None:
         raise ValueError("Both selection_id and runner_name were given")
+    if return_type is not None and not (return_type is dict or return_type is RunnerBook):
+        raise TypeError(f"return_type must be either dict or RunnerBook ({return_type} given)")
 
     if type(market_book) is dict:
-        return_type = dict
+        return_type = return_type or dict
     else:
         market_book = market_book._data
-        return_type = RunnerBook
+        return_type = return_type or RunnerBook
 
     if selection_id is None:
         for runner in market_book["marketDefinition"]["runners"]:
