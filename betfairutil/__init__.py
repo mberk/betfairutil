@@ -444,8 +444,12 @@ def get_runner_book_from_market_book(
     """
     if selection_id is not None and runner_name is not None:
         raise ValueError("Both selection_id and runner_name were given")
-    if return_type is not None and not (return_type is dict or return_type is RunnerBook):
-        raise TypeError(f"return_type must be either dict or RunnerBook ({return_type} given)")
+    if return_type is not None and not (
+        return_type is dict or return_type is RunnerBook
+    ):
+        raise TypeError(
+            f"return_type must be either dict or RunnerBook ({return_type} given)"
+        )
 
     if type(market_book) is dict:
         return_type = return_type or dict
