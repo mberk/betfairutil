@@ -1,9 +1,10 @@
 import datetime
 import enum
+import itertools
 from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
-from typing import Any, Dict, Generator, List, Optional, Sequence, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from betfairlightweight import APIClient
@@ -364,6 +365,7 @@ BETFAIR_TICKS = [
     990,
     1000,
 ]
+EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
 
 
 class Side(enum.Enum):
@@ -380,6 +382,22 @@ class Side(enum.Enum):
     @property
     def ex_key(self):
         return f"availableTo{self.value}"
+
+
+class MarketBookDiff:
+    def __init__(
+        self,
+        d: Dict[
+            Tuple[int, Union[int, float]],
+            Dict[str, Dict[Union[int, float], Union[int, float]]],
+        ],
+    ):
+        self.d = d
+
+    def get_size_changes(
+        self, selection_id: int, ex_key: str, handicap: Union[int, float] = 0.0
+    ) -> Optional[Dict[Union[int, float], Union[int, float]]]:
+        return self.d[(selection_id, handicap)].get(ex_key)
 
 
 def calculate_book_percentage(
@@ -402,6 +420,57 @@ def calculate_book_percentage(
             implied_probabilities.append(1.0 if side is Side.BACK else 0.0)
 
     return sum(implied_probabilities)
+
+
+def calculate_market_book_diff(
+    current_market_book: Union[Dict[str, Any], MarketBook],
+    previous_market_book: Union[Dict[str, Any], MarketBook],
+) -> MarketBookDiff:
+    """
+    Calculate the size differences between amounts available to back, available to lay, and traded between two market books
+
+    :param current_market_book: The current market book to use in the comparison
+    :param previous_market_book: The previous market book to use in the comparison
+    :return: The complete set of size differences stored in a MarketBookDiff
+    """
+    if type(current_market_book) is MarketBook:
+        current_market_book = current_market_book._data
+    if type(previous_market_book) is MarketBook:
+        previous_market_book = previous_market_book._data
+
+    diff = {
+        (runner["selectionId"], runner["handicap"]): {ex_key: {} for ex_key in EX_KEYS}
+        for runner in current_market_book["runners"]
+    }
+
+    for current_runner in current_market_book["runners"]:
+        previous_runner = get_runner_book_from_market_book(
+            previous_market_book,
+            current_runner["selectionId"],
+            handicap=current_runner["handicap"],
+        )
+
+        for ex_key in EX_KEYS:
+            previous_prices = {
+                price_size["price"]: price_size["size"]
+                for price_size in previous_runner.get("ex", {}).get(ex_key, [])
+            }
+            current_prices = {
+                price_size["price"]: price_size["size"]
+                for price_size in current_runner.get("ex", {}).get(ex_key, [])
+            }
+            all_prices = set(itertools.chain(previous_prices, current_prices))
+
+            for price in all_prices:
+                previous_size = previous_prices.get(price, 0)
+                current_size = current_prices.get(price, 0)
+                delta = round(current_size - previous_size, 2)
+
+                diff[(current_runner["selectionId"], current_runner["handicap"])][
+                    ex_key
+                ][price] = delta
+
+    return MarketBookDiff(diff)
 
 
 def filter_runners(
