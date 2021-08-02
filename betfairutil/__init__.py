@@ -449,6 +449,8 @@ def calculate_market_book_diff(
             current_runner["selectionId"],
             handicap=current_runner["handicap"],
         )
+        if current_runner == previous_runner:
+            continue
 
         for ex_key in EX_KEYS:
             previous_prices = {
@@ -727,7 +729,9 @@ def prices_file_to_data_frame(
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
-        listener=StreamListener(max_latency=None, lightweight=True),
+        listener=StreamListener(
+            max_latency=None, lightweight=True, debug=False, update_clk=False
+        ),
     )
 
     with patch("builtins.open", smart_open.open):
@@ -765,7 +769,9 @@ def read_prices_file(
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
-        listener=StreamListener(max_latency=None, lightweight=lightweight),
+        listener=StreamListener(
+            max_latency=None, lightweight=lightweight, debug=False, update_clk=False
+        ),
     )
 
     with patch("builtins.open", smart_open.open):

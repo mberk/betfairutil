@@ -3,7 +3,7 @@ from setuptools import setup
 with open("README.md", "r") as f:
     long_description = f.read()
 
-requires = ["betfairlightweight", "pandas"]
+requires = ["betfairlightweight", "pandas", "smart_open"]
 
 setup(
     name="betfairutil",
