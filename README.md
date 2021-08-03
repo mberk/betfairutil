@@ -18,13 +18,13 @@ Requires Python 3.5 or above.
 If working with Betfair prices files:
 
 ```
-pip install git+https://github.com/mberk/betfairutil.git@master#egg=betfairutil[files]
+pip install betfairutil[files]
 ```
 
 Otherwise:
 
 ```
-pip install git+https://github.com/mberk/betfairutil.git@master#egg=betfairutil
+pip install betfairutil
 ```
 
 # See Also
