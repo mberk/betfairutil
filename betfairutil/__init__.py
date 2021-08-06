@@ -417,7 +417,10 @@ def calculate_book_percentage(
         if best_price is not None:
             implied_probabilities.append(1.0 / best_price)
         else:
-            implied_probabilities.append(1.0 if side is Side.BACK else 0.0)
+            if side is Side.BACK:
+                other_best_price_size = get_best_price_size(runner, side.other_side)
+                if other_best_price_size is not None:
+                    implied_probabilities.append(1.0)
 
     return sum(implied_probabilities)
 
