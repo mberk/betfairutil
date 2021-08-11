@@ -478,7 +478,9 @@ def calculate_market_book_diff(
     return MarketBookDiff(diff)
 
 
-def calculate_total_matched(market_book: Union[Dict[str, Any], MarketBook]) -> Union[int, float]:
+def calculate_total_matched(
+    market_book: Union[Dict[str, Any], MarketBook]
+) -> Union[int, float]:
     """
     Calculate the total matched on this market from the amounts matched on each runner at each price point. Useful for historic data where this field is not populated
 
@@ -488,7 +490,11 @@ def calculate_total_matched(market_book: Union[Dict[str, Any], MarketBook]) -> U
     if type(market_book) is MarketBook:
         market_book = market_book._data
 
-    return sum(ps['size'] for r in market_book.get('runners', []) for ps in r.get('ex', {}).get('tradedVolume', []))
+    return sum(
+        ps["size"]
+        for r in market_book.get("runners", [])
+        for ps in r.get("ex", {}).get("tradedVolume", [])
+    )
 
 
 def filter_runners(
