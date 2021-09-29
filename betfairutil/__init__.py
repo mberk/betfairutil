@@ -1,6 +1,7 @@
 import datetime
 import enum
 import itertools
+import re
 from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
@@ -366,6 +367,7 @@ BETFAIR_TICKS = [
     1000,
 ]
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
+MARKET_ID_PATTERN = re.compile(r'(1\.\d{9})')
 
 
 class Side(enum.Enum):
@@ -570,6 +572,13 @@ def get_best_price_size(
         return next(iter(getattr(runner.ex, side.ex_key)), None)
     else:
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
+
+
+def get_market_id_from_string(s: str, as_integer: bool = False) -> Union[str, int]:
+    market_id = MARKET_ID_PATTERN.search(s).group(1)
+    if as_integer:
+        market_id = int(market_id[2:])
+    return market_id
 
 
 def is_market_book(x: Any) -> bool:
