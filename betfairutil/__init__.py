@@ -792,7 +792,7 @@ def read_prices_file(
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
         listener=StreamListener(
-            max_latency=None, lightweight=lightweight, debug=False, update_clk=False
+            max_latency=None, lightweight=lightweight, update_clk=False
         ),
     )
 
