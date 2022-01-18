@@ -367,7 +367,8 @@ BETFAIR_TICKS = [
     1000,
 ]
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
-MARKET_ID_PATTERN = re.compile(r'(1\.\d{9})')
+MARKET_ID_PATTERN = re.compile(r"(1\.\d{9})")
+_INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
 
 class Side(enum.Enum):
@@ -861,3 +862,33 @@ def remove_bet_from_runner_book(
             ],
         )
     return runner_book
+
+
+def random_from_market_id(market_id: Union[int, str]):
+    """
+    Maps a market ID to a real number in [0, 1)
+
+    :param market_id: A market ID, either in the standard string form provided by Betfair that starts "1." or an integer where the "1." prefix has been discarded
+    :return: A quasi-random number generated from the market ID. See random_from_positive_int for details
+    """
+    if type(market_id) is str:
+        market_id = int(market_id[2:])
+
+    return random_from_positive_int(market_id)
+
+
+def random_from_positive_int(i: int):
+    """
+    Maps a positive integer to a real number in [0, 1) by calculating the n-th term of the low discrepancy sequence described here: http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+
+    :param i: A positive integer
+    :return: The n-th term of the low discrepancy sequence described here: http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+    :raises: ValueError if i is not a positive integer
+    """
+    if type(i) is not int or i <= 0:
+        raise ValueError(f"{i} is not a positive integer")
+
+    return (0.5 + _INVERSE_GOLDEN_RATIO * i) % 1
+
+
+random_from_event_id = random_from_positive_int
