@@ -5,6 +5,7 @@ import re
 from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
+from math import sqrt
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
