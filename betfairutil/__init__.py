@@ -703,10 +703,8 @@ def market_book_to_data_frame(
     if "publishTime" in market_book:
         publish_time = market_book["publishTime"]
         if should_format_publish_time:
-            publish_time = (
-                datetime.datetime.utcfromtimestamp(publish_time / 1000)
-                .replace(tzinfo=datetime.timezone.utc)
-                .strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            publish_time = publish_time_to_datetime(publish_time).strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
             )
         df["publish_time"] = publish_time
 
@@ -791,6 +789,12 @@ def prices_file_to_data_frame(
         df["selection_id"] = df["selection_id"].astype(int)
         df["depth"] = df["depth"].astype(int)
         return df
+
+
+def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
+    return datetime.datetime.utcfromtimestamp(publish_time / 1000).replace(
+        tzinfo=datetime.timezone.utc
+    )
 
 
 def read_prices_file(
