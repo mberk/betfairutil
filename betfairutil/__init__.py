@@ -761,7 +761,7 @@ def prices_file_to_data_frame(
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
         listener=StreamListener(
-            max_latency=None, lightweight=True, debug=False, update_clk=False
+            max_latency=None, lightweight=True, update_clk=False
         ),
     )
 
