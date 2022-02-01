@@ -1,5 +1,15 @@
 # Release History
 
+## 0.1.1 - 2022-02-01
+
+### Added
+
+* Add publish_time_to_datetime function [a53cf58](https://github.com/mberk/betfairutil/pull/8/commits/a53cf58fdb9474bb8b46c85ae057112ced4f59f8)
+
+### Fixed
+
+* Remove deprecated argument to StreamListener [68fe522](https://github.com/mberk/betfairutil/pull/8/commits/68fe5229efda865f844d86016678013bbed0c7ba)
+
 ## 0.1.0 - 2022-02-01
 
 ### Added
