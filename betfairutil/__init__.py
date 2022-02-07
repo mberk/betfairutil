@@ -760,9 +760,7 @@ def prices_file_to_data_frame(
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
-        listener=StreamListener(
-            max_latency=None, lightweight=True, update_clk=False
-        ),
+        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
     )
 
     with patch("builtins.open", smart_open.open):
@@ -798,7 +796,7 @@ def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
 
 
 def read_prices_file(
-    path_to_prices_file: str, lightweight: bool = True
+    path_to_prices_file: str, lightweight: bool = True, **kwargs
 ) -> Union[List[MarketBook], List[Dict[str, Any]]]:
     import smart_open
     from unittest.mock import patch
@@ -807,7 +805,7 @@ def read_prices_file(
     stream = trading.streaming.create_historical_generator_stream(
         file_path=path_to_prices_file,
         listener=StreamListener(
-            max_latency=None, lightweight=lightweight, update_clk=False
+            max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
         ),
     )
 
