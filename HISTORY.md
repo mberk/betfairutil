@@ -1,5 +1,11 @@
 # Release History
 
+## 0.1.2 - 2022-02-08
+
+### Changed
+
+* Pass kwargs to StreamListener [142f4f6](https://github.com/mberk/betfairutil/commit/142f4f65c62253fd44b3ce6a849d19fb0e43d804)
+
 ## 0.1.1 - 2022-02-01
 
 ### Added
