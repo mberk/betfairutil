@@ -733,6 +733,8 @@ def prices_file_to_data_frame(
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
+    should_output_market_types: bool = False,
+    market_type_filter: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
@@ -741,6 +743,8 @@ def prices_file_to_data_frame(
     :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :param max_depth: Optionally limit the depth of the price ladder
+    :param should_output_market_types: Should the data frame contain a market type column. Only makes sense when reading files that contain multiple market types, such as event-level official historic data files. For efficiency, the market types are added once the entire file has been processed
+    :param market_type_filter: Optionally filter out market types which do not exist in the given sequence
     :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
 
       - market_id: The Betfair market ID
@@ -765,9 +769,12 @@ def prices_file_to_data_frame(
 
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
-        first_market_book = next(g())[0]
         df = pd.concat(
-            market_book_to_data_frame(mbs[0], max_depth=max_depth) for mbs in g()
+            market_book_to_data_frame(mb, max_depth=max_depth)
+            for mbs in g()
+            for mb in mbs
+            if market_type_filter is None
+            or mb["marketDefinition"]["marketType"] in market_type_filter
         )
         if should_format_publish_time:
             df["publish_time"] = pd.to_datetime(
@@ -776,13 +783,18 @@ def prices_file_to_data_frame(
         if should_output_runner_names:
             selection_id_to_runner_name_map = {
                 runner["id"]: runner["name"]
-                for runner in first_market_book.get("marketDefinition", {}).get(
-                    "runners", []
-                )
+                for mb in stream.listener.snap()
+                for runner in mb.get("marketDefinition", {}).get("runners", [])
             }
             df["runner_name"] = df["selection_id"].apply(
                 selection_id_to_runner_name_map.get
             )
+        if should_output_market_types:
+            market_id_to_market_type_map = {
+                mb["marketId"]: mb.get("marketDefinition", {}).get("marketType")
+                for mb in stream.listener.snap()
+            }
+            df["market_type"] = df["market_id"].apply(market_id_to_market_type_map.get)
         # Fix integer column types
         df["selection_id"] = df["selection_id"].astype(int)
         df["depth"] = df["depth"].astype(int)
@@ -796,7 +808,10 @@ def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
 
 
 def read_prices_file(
-    path_to_prices_file: str, lightweight: bool = True, **kwargs
+    path_to_prices_file: str,
+    lightweight: bool = True,
+    market_type_filter: Optional[Sequence[str]] = None,
+    **kwargs,
 ) -> Union[List[MarketBook], List[Dict[str, Any]]]:
     import smart_open
     from unittest.mock import patch
@@ -811,7 +826,13 @@ def read_prices_file(
 
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
-        return list(mbs[0] for mbs in g())
+        return list(
+            mb
+            for mbs in g()
+            for mb in mbs
+            if market_type_filter is None
+            or mb["marketDefinition"]["marketType"] in market_type_filter
+        )
 
 
 def remove_bet_from_runner_book(
