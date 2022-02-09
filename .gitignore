@@ -70,6 +70,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # pyenv
 .python-version
@@ -124,3 +125,10 @@ R/*.pdf
 # Profiling
 prof/
 .Rproj.user
+
+# Data Files
+*.bz2
+*.gz
+*.json
+*.ods
+*.tar
