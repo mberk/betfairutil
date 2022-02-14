@@ -831,7 +831,8 @@ def read_prices_file(
             for mbs in g()
             for mb in mbs
             if market_type_filter is None
-            or mb["marketDefinition"]["marketType"] in market_type_filter
+            or (lightweight and mb["marketDefinition"]["marketType"] in market_type_filter)
+            or (not lightweight and mb.market_definition.market_type in market_type_filter)
         )
 
 
