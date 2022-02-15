@@ -12,6 +12,7 @@ import pandas as pd
 from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
+from betfairlightweight.resources.bettingresources import MarketCatalogue
 from betfairlightweight.resources.bettingresources import PriceSize
 from betfairlightweight.resources.bettingresources import RunnerBook
 
@@ -581,6 +582,26 @@ def get_market_id_from_string(s: str, as_integer: bool = False) -> Union[str, in
     if as_integer:
         market_id = int(market_id[2:])
     return market_id
+
+
+def get_selection_id_to_runner_name_map_from_market_catalogue(
+    market_catalogue: Union[Dict[str, Any], MarketCatalogue]
+) -> Dict[int, str]:
+    if type(market_catalogue) is dict:
+        runners = market_catalogue["runners"]
+    else:
+        runners = market_catalogue.runners
+
+    selection_id_to_runner_name_map = {}
+    for runner in runners:
+        if type(runner) is dict:
+            selection_id_to_runner_name_map[runner["selectionId"]] = runner[
+                "runnerName"
+            ]
+        else:
+            selection_id_to_runner_name_map[runner.selection_id] = runner.runner_name
+
+    return selection_id_to_runner_name_map
 
 
 def is_market_book(x: Any) -> bool:
