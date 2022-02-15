@@ -862,10 +862,25 @@ def read_prices_file(
     path_to_prices_file: str,
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
+    market_catalogues: Optional[
+        Sequence[Union[Dict[str, Any], MarketCatalogue]]
+    ] = None,
     **kwargs,
 ) -> Union[List[MarketBook], List[Dict[str, Any]]]:
+    """
+    Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) into memory as a list of dicts or betfairlightweight MarketBook objects
+
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
+    :param lightweight: Passed to StreamListener. When True, the returned list contains dicts. When false, the returned list contains betfairlightweight MarketBook objects
+    :param market_type_filter: Optionally filter out market books with a market type which does not exist in the given sequence. Generally only makes sense when reading files that contain multiple market types, such as event-level official historic data files
+    :param market_catalogues: Optionally provide a list of market catalogues, as either dicts or betfairlightweight MarketCatalogue objects, that can be used to add runner names to the market books. Only makes sense when the prices file has been recorded from the streaming API
+    :param kwargs: Passed to StreamListener
+    :return: A list of market books, either as dicts or betfairlightweight MarketBook objects depending on whether the lightweight parameter is True or False respectively
+    """
     import smart_open
     from unittest.mock import patch
+
+    market_catalogues = market_catalogues or []
 
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
@@ -877,14 +892,46 @@ def read_prices_file(
 
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
-        return list(
+        market_books = list(
             mb
             for mbs in g()
             for mb in mbs
             if market_type_filter is None
-            or (lightweight and mb["marketDefinition"]["marketType"] in market_type_filter)
-            or (not lightweight and mb.market_definition.market_type in market_type_filter)
+            or (
+                lightweight
+                and mb["marketDefinition"]["marketType"] in market_type_filter
+            )
+            or (
+                not lightweight
+                and mb.market_definition.market_type in market_type_filter
+            )
         )
+
+    if (
+        market_books
+        and not does_market_book_contain_runner_names(market_books[0])
+        and market_catalogues
+    ):
+        selection_id_to_runner_name_map = {
+            selection_id: runner_name
+            for mc in market_catalogues
+            for selection_id, runner_name in get_selection_id_to_runner_name_map_from_market_catalogue(
+                mc
+            ).items()
+        }
+        for market_book in market_books:
+            if lightweight:
+                for runner in market_book["marketDefinition"]["runners"]:
+                    if runner["id"] in selection_id_to_runner_name_map:
+                        runner["name"] = selection_id_to_runner_name_map[runner["id"]]
+            else:
+                for runner in market_book.market_definition.runners:
+                    if runner.selection_id in selection_id_to_runner_name_map:
+                        runner.name = selection_id_to_runner_name_map[
+                            runner.selection_id
+                        ]
+
+    return market_books
 
 
 def remove_bet_from_runner_book(
