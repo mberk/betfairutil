@@ -15,6 +15,7 @@ from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import MarketCatalogue
 from betfairlightweight.resources.bettingresources import PriceSize
 from betfairlightweight.resources.bettingresources import RunnerBook
+from betfairlightweight.resources.streamingresources import MarketDefinition
 
 BETFAIR_TICKS = [
     1.01,
@@ -500,6 +501,24 @@ def calculate_total_matched(
         for r in market_book.get("runners", [])
         for ps in r.get("ex", {}).get("tradedVolume", [])
     )
+
+
+def does_market_definition_contain_runner_names(
+    market_definition: Union[Dict[str, Any], MarketDefinition]
+) -> bool:
+    if type(market_definition) is dict:
+        runners = market_definition["runners"]
+    else:
+        runners = market_definition.runners
+
+    runner = runners[0]
+
+    if type(runner) is dict:
+        name = runner.get("name")
+    else:
+        name = runner.name
+
+    return name is not None
 
 
 def filter_runners(
