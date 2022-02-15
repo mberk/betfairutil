@@ -503,6 +503,17 @@ def calculate_total_matched(
     )
 
 
+def does_market_book_contain_runner_names(
+    market_book: Union[Dict[str, Any], MarketBook]
+) -> bool:
+    if type(market_book) is dict:
+        market_definition = market_book["marketDefinition"]
+    else:
+        market_definition = market_book.market_definition
+
+    return does_market_definition_contain_runner_names(market_definition)
+
+
 def does_market_definition_contain_runner_names(
     market_definition: Union[Dict[str, Any], MarketDefinition]
 ) -> bool:
