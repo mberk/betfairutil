@@ -786,16 +786,18 @@ def prices_file_to_data_frame(
     max_depth: Optional[int] = None,
     should_output_market_types: bool = False,
     market_type_filter: Optional[Sequence[str]] = None,
+    market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
 ) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
 
     :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
-    :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed
+    :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed. If market_catalogues is given then this is ignored as it is assumed the intention with providing market_catalogues is to include the runner names
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :param max_depth: Optionally limit the depth of the price ladder
     :param should_output_market_types: Should the data frame contain a market type column. Only makes sense when reading files that contain multiple market types, such as event-level official historic data files. For efficiency, the market types are added once the entire file has been processed
     :param market_type_filter: Optionally filter out market types which do not exist in the given sequence
+    :param market_catalogues: Optionally provide a list of market catalogues, as either dicts or betfairlightweight MarketCatalogue objects, that can be used to add runner names to the data frame. Only makes sense when the prices file has been recorded from the streaming API
     :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
 
       - market_id: The Betfair market ID
@@ -811,6 +813,10 @@ def prices_file_to_data_frame(
     """
     import smart_open
     from unittest.mock import patch
+
+    market_catalogues = market_catalogues or []
+    if market_catalogues:
+        should_output_runner_names = True
 
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
@@ -833,9 +839,18 @@ def prices_file_to_data_frame(
             ).dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         if should_output_runner_names:
             selection_id_to_runner_name_map = {
-                runner["id"]: runner["name"]
-                for mb in stream.listener.snap()
-                for runner in mb.get("marketDefinition", {}).get("runners", [])
+                **{
+                    runner["id"]: runner.get("name")
+                    for mb in stream.listener.snap()
+                    for runner in mb.get("marketDefinition", {}).get("runners", [])
+                },
+                **{
+                    selection_id: runner_name
+                    for mc in market_catalogues
+                    for selection_id, runner_name in get_selection_id_to_runner_name_map_from_market_catalogue(
+                        mc
+                    ).items()
+                },
             }
             df["runner_name"] = df["selection_id"].apply(
                 selection_id_to_runner_name_map.get
