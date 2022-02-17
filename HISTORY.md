@@ -1,5 +1,15 @@
 # Release History
 
+## 0.2.0 - 2022-02-17
+
+### Added
+
+* Use market catalogues to inject runner names into self recorded data [#13](https://github.com/mberk/betfairutil/issues/13)
+
+### Fixed
+
+* Handle event-level historic prices files [#11](https://github.com/mberk/betfairutil/issues/11)
+
 ## 0.1.2 - 2022-02-08
 
 ### Changed
