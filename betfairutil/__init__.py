@@ -371,6 +371,7 @@ BETFAIR_TICKS = [
 ]
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
 MARKET_ID_PATTERN = re.compile(r"(1\.\d{9})")
+RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
 
@@ -612,6 +613,18 @@ def get_market_id_from_string(s: str, as_integer: bool = False) -> Union[str, in
     if as_integer:
         market_id = int(market_id[2:])
     return market_id
+
+
+def get_race_id_from_string(s: str) -> str:
+    """
+    Searches the given string for a race ID in the 12345678.1234 and returns it if one is found
+
+    :param s: The string to search
+    :return: If a substring matching the pattern 12345678.1234 is found then that substring otherwise None
+    """
+    match = RACE_ID_PATTERN.search(s)
+    if match:
+        return match.group(0)
 
 
 def get_selection_id_to_runner_name_map_from_market_catalogue(
