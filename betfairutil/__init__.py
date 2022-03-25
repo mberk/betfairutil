@@ -370,7 +370,7 @@ BETFAIR_TICKS = [
     1000,
 ]
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
-MARKET_ID_PATTERN = re.compile(r"(1\.\d{9})")
+MARKET_ID_PATTERN = re.compile(r"1\.\d{9}")
 RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
@@ -608,11 +608,20 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
-def get_market_id_from_string(s: str, as_integer: bool = False) -> Union[str, int]:
-    market_id = MARKET_ID_PATTERN.search(s).group(1)
-    if as_integer:
-        market_id = int(market_id[2:])
-    return market_id
+def get_market_id_from_string(s: str, as_integer: bool = False) -> Optional[Union[str, int]]:
+    """
+    Searches the given string for a market ID in the form 1.234567890 and returns it if one is found
+
+    :param s: The string to search
+    :param as_integer: Whether a found market ID should be returned as a string in the form "1.234567890" or whether the prefix "1." should be dropped and 234567890 returned as an integer
+    :return: If no market ID can be found in the string then None. Otherwise, the market ID either as a string or integer according to the as_integer parameter
+    """
+    match = MARKET_ID_PATTERN.search(s)
+    if match:
+        market_id = match.group(0)
+        if as_integer:
+            market_id = int(market_id[2:])
+        return market_id
 
 
 def get_race_id_from_string(s: str) -> str:
