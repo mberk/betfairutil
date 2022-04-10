@@ -608,7 +608,9 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
-def get_market_id_from_string(s: str, as_integer: bool = False) -> Optional[Union[str, int]]:
+def get_market_id_from_string(
+    s: str, as_integer: bool = False
+) -> Optional[Union[str, int]]:
     """
     Searches the given string for a market ID in the form 1.234567890 and returns it if one is found
 
@@ -923,8 +925,9 @@ def read_prices_file(
 
     if use_betfair_data:
         if lightweight:
-            raise ValueError('Cannot use lightweight=True with betfair_data package')
+            raise ValueError("Cannot use lightweight=True with betfair_data package")
         from betfair_data import bflw
+
         g = next(bflw.Files([path_to_prices_file]))
     else:
         trading = APIClient(username="", password="", app_key="")
