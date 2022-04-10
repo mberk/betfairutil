@@ -902,15 +902,17 @@ def read_prices_file(
     market_catalogues: Optional[
         Sequence[Union[Dict[str, Any], MarketCatalogue]]
     ] = None,
+    use_betfair_data: bool = False,
     **kwargs,
 ) -> Union[List[MarketBook], List[Dict[str, Any]]]:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) into memory as a list of dicts or betfairlightweight MarketBook objects
 
-    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. If use_betfair_data is false then this can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed. If use_betfair_data is true then the file can be compressed or uncompressed but must stored locally
     :param lightweight: Passed to StreamListener. When True, the returned list contains dicts. When false, the returned list contains betfairlightweight MarketBook objects
     :param market_type_filter: Optionally filter out market books with a market type which does not exist in the given sequence. Generally only makes sense when reading files that contain multiple market types, such as event-level official historic data files
     :param market_catalogues: Optionally provide a list of market catalogues, as either dicts or betfairlightweight MarketCatalogue objects, that can be used to add runner names to the market books. Only makes sense when the prices file has been recorded from the streaming API
+    :param use_betfair_data: Optionally use the betfair_data package instead of betfairlightweight to read the prices file
     :param kwargs: Passed to StreamListener
     :return: A list of market books, either as dicts or betfairlightweight MarketBook objects depending on whether the lightweight parameter is True or False respectively
     """
@@ -919,19 +921,25 @@ def read_prices_file(
 
     market_catalogues = market_catalogues or []
 
-    trading = APIClient(username="", password="", app_key="")
-    stream = trading.streaming.create_historical_generator_stream(
-        file_path=path_to_prices_file,
-        listener=StreamListener(
-            max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
-        ),
-    )
+    if use_betfair_data:
+        if lightweight:
+            raise ValueError('Cannot use lightweight=True with betfair_data package')
+        from betfair_data import bflw
+        g = next(bflw.Files([path_to_prices_file]))
+    else:
+        trading = APIClient(username="", password="", app_key="")
+        stream = trading.streaming.create_historical_generator_stream(
+            file_path=path_to_prices_file,
+            listener=StreamListener(
+                max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
+            ),
+        )
+        g = stream.get_generator()()
 
     with patch("builtins.open", smart_open.open):
-        g = stream.get_generator()
         market_books = list(
             mb
-            for mbs in g()
+            for mbs in g
             for mb in mbs
             if market_type_filter is None
             or (
