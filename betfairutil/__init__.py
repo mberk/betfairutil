@@ -511,6 +511,8 @@ def does_market_book_contain_runner_names(
         market_definition = market_book["marketDefinition"]
     else:
         market_definition = market_book.market_definition
+        if market_definition is None:
+            return False
 
     return does_market_definition_contain_runner_names(market_definition)
 
@@ -519,9 +521,12 @@ def does_market_definition_contain_runner_names(
     market_definition: Union[Dict[str, Any], MarketDefinition]
 ) -> bool:
     if type(market_definition) is dict:
-        runners = market_definition["runners"]
+        runners = market_definition.get("runners", [])
     else:
         runners = market_definition.runners
+
+    if len(runners) == 0:
+        return False
 
     runner = runners[0]
 
