@@ -656,6 +656,15 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
     return selection_id_to_runner_name_map
 
 
+def get_win_market_id_from_race_card(race_card: Dict[str, Any], as_integer: bool = False) -> Optional[Union[int, str]]:
+    for market in race_card['race']['markets']:
+        market_id = market['marketId']
+        if market['marketType'] == 'WIN' and market_id.startswith('1.'):
+            if as_integer:
+                market_id = int(market_id[2:])
+            return market_id
+
+
 def is_market_book(x: Any) -> bool:
     """
     Test whether x is a betfairlightweight MarketBook object or a dictionary (mapping) with all required fields to construct one (as would be generated when using betfairlightweight in lightweight mode)
