@@ -989,6 +989,21 @@ def read_prices_file(
     return market_books
 
 
+def read_race_file(path_to_race_file: str) -> List[Dict[str, Any]]:
+    import smart_open
+    from unittest.mock import patch
+
+    trading = APIClient(username="", password="", app_key="")
+    stream = trading.streaming.create_historical_generator_stream(
+        file_path=path_to_race_file,
+        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
+        operation="raceSubscription",
+    )
+    with patch("builtins.open", smart_open.open):
+        g = stream.get_generator()
+        return [rc for rcs in g() for rc in rcs]
+
+
 def remove_bet_from_runner_book(
     runner_book: Union[Dict[str, Any], RunnerBook],
     price: Union[int, float],
