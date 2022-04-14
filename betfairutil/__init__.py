@@ -375,6 +375,13 @@ RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
 
+try:
+    import betfair_data.bflw
+    MarketBookType = Union[Dict[str, Any], MarketBook, betfair_data.bflw.MarketBook]
+except ImportError:
+    MarketBookType = Union[Dict[str, Any], MarketBook]
+
+
 class Side(enum.Enum):
     BACK = "Back"
     LAY = "Lay"
