@@ -608,7 +608,9 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
-def get_market_id_from_string(s: str, as_integer: bool = False) -> Optional[Union[str, int]]:
+def get_market_id_from_string(
+    s: str, as_integer: bool = False
+) -> Optional[Union[str, int]]:
     """
     Searches the given string for a market ID in the form 1.234567890 and returns it if one is found
 
@@ -656,10 +658,12 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
     return selection_id_to_runner_name_map
 
 
-def get_win_market_id_from_race_card(race_card: Dict[str, Any], as_integer: bool = False) -> Optional[Union[int, str]]:
-    for market in race_card['race']['markets']:
-        market_id = market['marketId']
-        if market['marketType'] == 'WIN' and market_id.startswith('1.'):
+def get_win_market_id_from_race_card(
+    race_card: Dict[str, Any], as_integer: bool = False
+) -> Optional[Union[int, str]]:
+    for market in race_card["race"]["markets"]:
+        market_id = market["marketId"]
+        if market["marketType"] == "WIN" and market_id.startswith("1."):
             if as_integer:
                 market_id = int(market_id[2:])
             return market_id
