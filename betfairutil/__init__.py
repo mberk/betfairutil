@@ -818,6 +818,7 @@ def prices_file_to_data_frame(
     should_output_market_types: bool = False,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
+    use_betfair_data: bool = False,
 ) -> pd.DataFrame:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
@@ -849,17 +850,22 @@ def prices_file_to_data_frame(
     if market_catalogues:
         should_output_runner_names = True
 
-    trading = APIClient(username="", password="", app_key="")
-    stream = trading.streaming.create_historical_generator_stream(
-        file_path=path_to_prices_file,
-        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
-    )
+    if use_betfair_data:
+        from betfair_data import bflw
+
+        g = next(bflw.Files([path_to_prices_file]))
+    else:
+        trading = APIClient(username="", password="", app_key="")
+        stream = trading.streaming.create_historical_generator_stream(
+            file_path=path_to_prices_file,
+            listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
+        )
+        g = stream.get_generator()()
 
     with patch("builtins.open", smart_open.open):
-        g = stream.get_generator()
         df = pd.concat(
             market_book_to_data_frame(mb, max_depth=max_depth)
-            for mbs in g()
+            for mbs in g
             for mb in mbs
             if market_type_filter is None
             or mb["marketDefinition"]["marketType"] in market_type_filter
