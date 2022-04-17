@@ -706,6 +706,26 @@ def is_runner_book(x: Any) -> bool:
         return False
 
 
+def is_price_the_same_or_better(
+    a: Union[int, float], b: Union[int, float], side: Side
+) -> bool:
+    """
+    Test whether a price is the same or better than another price from the perspective of betting on a given Side
+
+    :param a: The price to test if it is the same or better
+    :param b: The price to compare against
+    :param side: The perspective from which to make the comparison. If side is Side.BACK then better prices are prices which are larger. If side is Side.LAY then better prices are prices which are smaller
+    :return: True if a is the same or better than b otherwise False
+    :raises: TypeError if side is not a valid value of the Side enum
+    """
+    if side == Side.BACK:
+        return a >= b
+    elif side == Side.LAY:
+        return a <= b
+    else:
+        raise TypeError("side must be of type Side")
+
+
 def iterate_active_runners(
     market_book: Union[Dict[str, Any], MarketBook]
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
