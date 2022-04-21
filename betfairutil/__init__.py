@@ -1631,17 +1631,21 @@ def filter_runners(
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
     if type(market_book) is dict:
         runners = market_book["runners"]
-        return_type = dict
     else:
         runners = market_book.runners
-        return_type = RunnerBook
 
     for runner in runners:
-        if runner["status"] != status:
+        if type(runner) is dict:
+            runner_status = runner["status"]
+            selection_id = runner["selectionId"]
+        else:
+            runner_status = runner.status
+            selection_id = runner.selection_id
+        if runner_status != status:
             continue
-        if runner["selectionId"] in excluded_selection_ids:
+        if selection_id in excluded_selection_ids:
             continue
-        yield return_type(**runner)
+        yield runner
 
 
 def get_runner_book_from_market_book(
