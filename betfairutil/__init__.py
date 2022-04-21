@@ -1457,7 +1457,7 @@ class Side(enum.Enum):
 
     @property
     def next_worse_price_map(self):
-        if self is Side.LAY:
+        if self is Side.BACK:
             return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP
         else:
             return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
