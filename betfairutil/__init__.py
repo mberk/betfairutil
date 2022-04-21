@@ -1553,6 +1553,20 @@ def calculate_market_book_diff(
     return MarketBookDiff(diff)
 
 
+def calculate_price_difference(a: Union[int, float], b: Union[int, float]) -> int:
+    """
+    Calculate the price difference between two prices as the number of steps on the Betfair price ladder. For example, the difference between 1.03 and 1.01 is 2. Conversely, the difference between 1.01 and 1.03 is -2
+
+    :param a: A valid Betfair price
+    :param b: A valid Betfair price
+    :return: The difference between a and b as the number of steps on the Betfair price ladder
+    :raises: As it is assumed a and b are already valid Betfair prices, an IndexError will be thrown when trying to look up an invalid price in the index map
+    """
+    a_index = BETFAIR_PRICE_TO_PRICE_INDEX_MAP[a]
+    b_index = BETFAIR_PRICE_TO_PRICE_INDEX_MAP[b]
+    return a_index - b_index
+
+
 def calculate_total_matched(
     market_book: Union[Dict[str, Any], MarketBook]
 ) -> Union[int, float]:
