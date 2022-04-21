@@ -1740,6 +1740,22 @@ def get_outside_best_price(
     return side.next_worse_price_map.get(best_price)
 
 
+def get_spread(runner: Union[Dict[str, Any], RunnerBook]) -> Optional[int]:
+    """
+    Get the spread - the difference between the best available to lay and best available to back prices - on a runner in terms of number of steps on the Betfair price ladder
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :return: If the runner has no prices on either side then None otherwise the difference between the best available to lay and best available to back prices in terms of number of steps on the Betfair price ladder
+    """
+    best_back_price = get_best_price(runner, Side.BACK)
+    if best_back_price is None:
+        return
+    best_lay_price = get_best_price(runner, Side.LAY)
+    if best_lay_price is None:
+        return
+    return calculate_price_difference(best_lay_price, best_back_price)
+
+
 def get_market_id_from_string(
     s: str, as_integer: bool = False
 ) -> Optional[Union[str, int]]:
