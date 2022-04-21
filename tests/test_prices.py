@@ -7,6 +7,7 @@ from betfairutil import BETFAIR_PRICES
 from betfairutil import BETFAIR_PRICE_TO_PRICE_INDEX_MAP
 from betfairutil import decrement_price
 from betfairutil import get_inside_best_price
+from betfairutil import get_outside_best_price
 from betfairutil import get_spread
 from betfairutil import increment_price
 from betfairutil import Side
@@ -114,6 +115,57 @@ def test_get_inside_best_price(runner: Dict[str, Any], use_runner_book_objects: 
             )
         assert (
             get_inside_best_price(
+                RunnerBook(**runner) if use_runner_book_objects else runner, Side.LAY
+            )
+            is None
+        )
+
+
+@pytest.mark.parametrize("use_runner_book_objects", [False, True])
+def test_get_outside_best_price(runner: Dict[str, Any], use_runner_book_objects: bool):
+    assert (
+        get_outside_best_price(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+        )
+        is None
+    )
+    assert (
+        get_outside_best_price(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.LAY
+        )
+        is None
+    )
+
+    runner["ex"]["availableToBack"].append({"price": 1000, "size": 1})
+    assert (
+        get_outside_best_price(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+        )
+        == 990
+    )
+    assert (
+        get_outside_best_price(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.LAY
+        )
+        is None
+    )
+
+    for i, price in enumerate(BETFAIR_PRICES):
+        if price == 1000:
+            continue
+        runner["ex"]["availableToBack"][0]["price"] = price
+        outside_best_price = get_outside_best_price(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+        )
+        if price == 1.01:
+            assert outside_best_price is None
+        else:
+            assert (
+                BETFAIR_PRICE_TO_PRICE_INDEX_MAP[price] - 1
+                == BETFAIR_PRICE_TO_PRICE_INDEX_MAP[outside_best_price]
+            )
+        assert (
+            get_outside_best_price(
                 RunnerBook(**runner) if use_runner_book_objects else runner, Side.LAY
             )
             is None
