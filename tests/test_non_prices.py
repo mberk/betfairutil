@@ -7,6 +7,7 @@ from betfairlightweight.resources import MarketBook
 from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
 from betfairutil import EX_KEYS
+from betfairutil import random_from_market_id
 from betfairutil import Side
 
 
@@ -97,3 +98,13 @@ def test_calculate_market_book_diff(market_book: Dict[str, Any]):
     assert market_book_diff.get_size_changes(456, "availableToBack") == {1.98: -1}
     assert market_book_diff.get_size_changes(456, "availableToLay") == {}
     assert market_book_diff.get_size_changes(456, "tradedVolume") == {}
+
+
+def test_random_from_market_id():
+    with pytest.raises(ValueError):
+        random_from_market_id(-1)
+
+    with pytest.raises(ValueError):
+        random_from_market_id(0.5)
+
+    assert random_from_market_id("1.123") == 0.5181806162370606
