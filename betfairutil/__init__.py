@@ -1445,6 +1445,10 @@ class Side(enum.Enum):
         return f"availableTo{self.value}"
 
     @property
+    def ex_attribute(self):
+        return f"available_to_{self.value.lower()}"
+
+    @property
     def next_better_price_map(self):
         if self is Side.BACK:
             return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
@@ -1690,7 +1694,7 @@ def get_best_price_size(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
     if type(runner) is RunnerBook:
-        return next(iter(getattr(runner.ex, side.ex_key)), None)
+        return next(iter(getattr(runner.ex, side.ex_attribute)), None)
     else:
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
