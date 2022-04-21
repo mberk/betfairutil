@@ -48,7 +48,7 @@ def test_decrement_price():
         )
 
 
-@pytest.mark.parametrize("use_runner_book_objects", [(False,), (True,)])
+@pytest.mark.parametrize("use_runner_book_objects", [False, True])
 def test_get_spread(runner: Dict[str, Any], use_runner_book_objects: bool):
     assert (
         get_spread(RunnerBook(**runner) if use_runner_book_objects else runner) is None
@@ -69,7 +69,7 @@ def test_get_spread(runner: Dict[str, Any], use_runner_book_objects: bool):
         )
 
 
-@pytest.mark.parametrize("use_runner_book_objects", [(False,), (True,)])
+@pytest.mark.parametrize("use_runner_book_objects", [False, True])
 def test_get_inside_best_price(runner: Dict[str, Any], use_runner_book_objects: bool):
     assert (
         get_inside_best_price(
