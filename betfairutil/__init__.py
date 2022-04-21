@@ -1376,6 +1376,26 @@ def get_win_market_id_from_race_card(
             return market_id
 
 
+def decrement_betfair_price(price: Union[int, float]) -> Optional[int, float]:
+    """
+    Given a price return the next lower price on the Betfair price ladder
+
+    :param price: The price to decrement
+    :return: None if price is at the end of the ladder - i.e. 1.01 - or price does not exist on the ladder - i.e. it is not a valid Betfair price
+    """
+    return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP.get(price)
+
+
+def increment_betfair_price(price: Union[int, float]) -> Optional[int, float]:
+    """
+    Given a price return the next higher price on the Betfair price ladder
+
+    :param price: The price to increment
+    :return: None if price is at the end of the ladder - i.e. 1000 - or price does not exist on the ladder - i.e. it is not a valid Betfair price
+    """
+    return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP.get(price)
+
+
 def is_market_book(x: Any) -> bool:
     """
     Test whether x is a betfairlightweight MarketBook object or a dictionary (mapping) with all required fields to construct one (as would be generated when using betfairlightweight in lightweight mode)
