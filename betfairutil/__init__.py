@@ -1329,7 +1329,9 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
-def get_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+def get_best_price(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[int, float]]:
     """
     Get the best price available on a runner on side Side. This is a convenience function which retrieves the best price/size pair using get_best_price_size then returns the price field
 
@@ -1344,7 +1346,9 @@ def get_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Opt
         return best_price_size["price"]
 
 
-def get_inside_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+def get_inside_best_price(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[int, float]]:
     """
     Get the price one step up (side == Side.BACK) or down (side == Side.LAY) the Betfair price ladder from a runner's best available price
 
@@ -1356,7 +1360,9 @@ def get_inside_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side)
     return side.next_better_price_map.get(best_price)
 
 
-def get_outside_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+def get_outside_best_price(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[int, float]]:
     """
     Get the price one step down (side == Side.BACK) or up (side == Side.LAY) the Betfair price ladder from a runner's best available price
 
