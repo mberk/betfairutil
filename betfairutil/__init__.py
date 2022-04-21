@@ -1315,6 +1315,21 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
+def get_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+    """
+    Get the best price available on a runner on side Side. This is a convenience function which retrieves the best price/size pair using get_best_price_size then returns the price field
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :param side: Indicate whether to get the best back or lay price
+    :return: The best price if one exists otherwise None
+    """
+    best_price_size = get_best_price_size(runner, side)
+    if type(best_price_size) is PriceSize:
+        return best_price_size.price
+    elif type(best_price_size) is dict:
+        return best_price_size["price"]
+
+
 def get_market_id_from_string(
     s: str, as_integer: bool = False
 ) -> Optional[Union[str, int]]:
