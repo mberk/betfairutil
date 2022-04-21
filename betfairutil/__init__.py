@@ -1817,7 +1817,7 @@ def get_win_market_id_from_race_card(
             return market_id
 
 
-def decrement_betfair_price(price: Union[int, float]) -> Optional[Union[int, float]]:
+def decrement_price(price: Union[int, float]) -> Optional[Union[int, float]]:
     """
     Given a price return the next lower price on the Betfair price ladder
 
@@ -1827,7 +1827,7 @@ def decrement_betfair_price(price: Union[int, float]) -> Optional[Union[int, flo
     return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP.get(price)
 
 
-def increment_betfair_price(price: Union[int, float]) -> Optional[Union[int, float]]:
+def increment_price(price: Union[int, float]) -> Optional[Union[int, float]]:
     """
     Given a price return the next higher price on the Betfair price ladder
 
