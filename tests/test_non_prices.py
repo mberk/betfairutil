@@ -1,9 +1,12 @@
+from copy import deepcopy
 from typing import Any, Dict
 
 import pytest
 from betfairlightweight.resources import MarketBook
 
 from betfairutil import calculate_book_percentage
+from betfairutil import calculate_market_book_diff
+from betfairutil import EX_KEYS
 from betfairutil import Side
 
 
@@ -64,3 +67,33 @@ def test_calculate_book_percentage(
         )
         == 1.0 + 1.0 / 1.98
     )
+
+
+def test_calculate_market_book_diff(market_book: Dict[str, Any]):
+    market_book_diff = calculate_market_book_diff(market_book, market_book)
+    for runner in market_book["runners"]:
+        for ex_key in EX_KEYS:
+            assert market_book_diff.get_size_changes(runner["selectionId"], ex_key) == {}
+
+    market_book_diff = calculate_market_book_diff(MarketBook(**market_book), MarketBook(**market_book))
+    for runner in market_book["runners"]:
+        for ex_key in EX_KEYS:
+            assert market_book_diff.get_size_changes(runner["selectionId"], ex_key) == {}
+
+    previous_market_book = deepcopy(market_book)
+    market_book["runners"][1]["ex"]["availableToBack"].pop()
+    market_book_diff = calculate_market_book_diff(market_book, previous_market_book)
+    assert market_book_diff.get_size_changes(123, "availableToBack") == {}
+    assert market_book_diff.get_size_changes(123, "availableToLay") == {}
+    assert market_book_diff.get_size_changes(123, "tradedVolume") == {}
+    assert market_book_diff.get_size_changes(456, "availableToBack") == {1.98: -1}
+    assert market_book_diff.get_size_changes(456, "availableToLay") == {}
+    assert market_book_diff.get_size_changes(456, "tradedVolume") == {}
+
+    market_book_diff = calculate_market_book_diff(MarketBook(**market_book), MarketBook(**previous_market_book))
+    assert market_book_diff.get_size_changes(123, "availableToBack") == {}
+    assert market_book_diff.get_size_changes(123, "availableToLay") == {}
+    assert market_book_diff.get_size_changes(123, "tradedVolume") == {}
+    assert market_book_diff.get_size_changes(456, "availableToBack") == {1.98: -1}
+    assert market_book_diff.get_size_changes(456, "availableToLay") == {}
+    assert market_book_diff.get_size_changes(456, "tradedVolume") == {}
