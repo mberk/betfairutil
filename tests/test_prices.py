@@ -10,6 +10,7 @@ from betfairutil import get_inside_best_price
 from betfairutil import get_outside_best_price
 from betfairutil import get_spread
 from betfairutil import increment_price
+from betfairutil import is_price_the_same_or_better
 from betfairutil import Side
 
 
@@ -170,3 +171,20 @@ def test_get_outside_best_price(runner: Dict[str, Any], use_runner_book_objects:
             )
             is None
         )
+
+
+def test_is_price_the_same_or_better():
+    with pytest.raises(TypeError):
+        is_price_the_same_or_better(1.01, 1.02, "foo")
+
+    for price in BETFAIR_PRICES:
+        if price == 1000:
+            continue
+        next_price = increment_price(price)
+        assert is_price_the_same_or_better(price, price, Side.BACK)
+        assert not is_price_the_same_or_better(price, next_price, Side.BACK)
+        assert is_price_the_same_or_better(next_price, price, Side.BACK)
+
+        assert is_price_the_same_or_better(price, price, Side.LAY)
+        assert is_price_the_same_or_better(price, next_price, Side.LAY)
+        assert not is_price_the_same_or_better(next_price, price, Side.LAY)
