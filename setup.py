@@ -4,6 +4,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 requires = ["betfairlightweight", "pandas"]
+tests_require = ["pytest"]
 
 setup(
     name="betfairutil",
@@ -16,7 +17,7 @@ setup(
     url="https://github.com/mberk/betfairutil",
     packages=["betfairutil"],
     install_requires=requires,
-    tests_require=[],
+    tests_require=tests_require,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
