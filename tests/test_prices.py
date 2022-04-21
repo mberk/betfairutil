@@ -12,6 +12,7 @@ from betfairutil import get_spread
 from betfairutil import increment_price
 from betfairutil import is_price_the_same_or_better
 from betfairutil import is_price_worse
+from betfairutil import make_price_betfair_valid
 from betfairutil import Side
 
 
@@ -206,3 +207,20 @@ def test_is_price_worse():
         assert not is_price_worse(price, price, Side.LAY)
         assert not is_price_worse(price, next_price, Side.LAY)
         assert is_price_worse(next_price, price, Side.LAY)
+
+
+def test_make_price_betfair_valid():
+    with pytest.raises(TypeError):
+        make_price_betfair_valid(2.0, "foo")
+
+    assert make_price_betfair_valid(1.005, Side.LAY) is None
+    assert make_price_betfair_valid(2000, Side.BACK) is None
+
+    for price in BETFAIR_PRICES:
+        prev_price = decrement_price(price)
+        next_price = increment_price(price)
+
+        if price != 1000:
+            assert make_price_betfair_valid(price + 0.001, Side.BACK) == next_price
+        if price != 1.01:
+            assert make_price_betfair_valid(price - 0.001, Side.LAY) == prev_price
