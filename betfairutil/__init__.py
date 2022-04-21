@@ -1092,6 +1092,20 @@ class Side(enum.Enum):
     def ex_key(self):
         return f"availableTo{self.value}"
 
+    @property
+    def next_better_price_map(self):
+        if self is Side.BACK:
+            return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
+        else:
+            return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP
+
+    @property
+    def next_worse_price_map(self):
+        if self is Side.LAY:
+            return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP
+        else:
+            return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
+
 
 class MarketBookDiff:
     def __init__(
@@ -1320,7 +1334,7 @@ def get_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Opt
     Get the best price available on a runner on side Side. This is a convenience function which retrieves the best price/size pair using get_best_price_size then returns the price field
 
     :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
-    :param side: Indicate whether to get the best back or lay price
+    :param side: Indicate whether to get the best available back or lay price
     :return: The best price if one exists otherwise None
     """
     best_price_size = get_best_price_size(runner, side)
@@ -1328,6 +1342,30 @@ def get_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Opt
         return best_price_size.price
     elif type(best_price_size) is dict:
         return best_price_size["price"]
+
+
+def get_inside_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+    """
+    Get the price one step up (side == Side.BACK) or down (side == Side.LAY) the Betfair price ladder from a runner's best available price
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :param side:
+    :return: If the runner has any prices and the best price is not at the end of the ladder then the price one step better than the best available price. Otherwise None
+    """
+    best_price = get_best_price(runner, side)
+    return side.next_better_price_map.get(best_price)
+
+
+def get_outside_best_price(runner: Union[Dict[str, Any], RunnerBook], side: Side) -> Optional[Union[int, float]]:
+    """
+    Get the price one step down (side == Side.BACK) or up (side == Side.LAY) the Betfair price ladder from a runner's best available price
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :param side:
+    :return: If the runner has any prices and the best price is not at the end of the ladder then the price one step worse than the best available price. Otherwise None
+    """
+    best_price = get_best_price(runner, side)
+    return side.next_worse_price_map.get(best_price)
 
 
 def get_market_id_from_string(
