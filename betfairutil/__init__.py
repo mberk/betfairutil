@@ -710,7 +710,7 @@ def is_price_the_same_or_better(
     a: Union[int, float], b: Union[int, float], side: Side
 ) -> bool:
     """
-    Test whether a price is the same or better than another price from the perspective of betting on a given Side
+    Test whether a price is the same or better than another price from the perspective of betting on a given Side. For example, if Side is Side.BACK then a price of 1.49 is worse than a price of 1.5 but a price of 1.51 is better than a price of 1.5
 
     :param a: The price to test if it is the same or better
     :param b: The price to compare against
@@ -724,6 +724,19 @@ def is_price_the_same_or_better(
         return a <= b
     else:
         raise TypeError("side must be of type Side")
+
+
+def is_price_worse(a: Union[int, float], b: Union[int, float], side: Side) -> bool:
+    """
+    Test whether a price is worse than another price from the perspective of betting on a given Side. For example, if Side is Side.BACK then a price of 1.49 is worse than a price of 1.5 but a price of 1.51 is better than a price of 1.5
+
+    :param a: The price to test if it is worse
+    :param b: The price to compare against
+    :param side: The perspective from which to make the comparison. If side is Side.BACK then worse prices are prices which are smaller. If side is Side.LAY then worse prices are prices which are larger
+    :return: True if a is worse than b otherwise False
+    :raises: TypeError if side is not a valid value of the Side enum
+    """
+    return not is_price_the_same_or_better(a, b, side)
 
 
 def iterate_active_runners(
