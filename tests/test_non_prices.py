@@ -3,7 +3,9 @@ from typing import Any, Dict
 
 import pytest
 from betfairlightweight.resources import MarketBook
+from betfairlightweight.resources import MarketCatalogue
 from betfairlightweight.resources import MarketDefinition
+from betfairlightweight.resources import RunnerBook
 
 from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
@@ -12,8 +14,52 @@ from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
 from betfairutil import filter_runners
+from betfairutil import get_market_id_from_string
+from betfairutil import get_race_id_from_string
+from betfairutil import get_runner_book_from_market_book
+from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
+from betfairutil import get_win_market_id_from_race_card
+from betfairutil import is_market_book
+from betfairutil import is_runner_book
+from betfairutil import iterate_other_active_runners
+from betfairutil import market_book_to_data_frame
 from betfairutil import random_from_market_id
+from betfairutil import remove_bet_from_runner_book
 from betfairutil import Side
+
+
+@pytest.fixture
+def race_card():
+    return {
+        "race": {
+            "markets": [
+                {"marketId": "924.123", "marketType": "WIN", "numberOfWinners": 1},
+                {"marketId": "927.123", "marketType": "WIN", "numberOfWinners": 1},
+                {"marketId": "1.123", "marketType": "PLACE", "numberOfWinners": 3},
+                {"marketId": "1.456", "marketType": "WIN", "numberOfWinners": 1},
+            ]
+        }
+    }
+
+
+@pytest.fixture
+def market_catalogue():
+    return {
+        "runners": [
+            {
+                "selectionId": 123,
+                "runnerName": "foo",
+                "sortPriority": 1,
+                "status": "ACTIVE",
+            },
+            {
+                "selectionId": 456,
+                "runnerName": "bar",
+                "sortPriority": 2,
+                "status": "ACTIVE",
+            },
+        ]
+    }
 
 
 @pytest.fixture
@@ -73,6 +119,9 @@ def market_book(market_definition: Dict[str, Any]):
             },
         ],
         "marketDefinition": market_definition,
+        "marketId": "1.123",
+        "inplay": True,
+        "publishTime": 1648994400000,
     }
 
 
@@ -194,6 +243,148 @@ def test_filter_runners(market_book: Dict[str, Any]):
         )
         == 1
     )
+
+
+def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
+    with pytest.raises(ValueError):
+        get_runner_book_from_market_book(
+            market_book, selection_id=123, runner_name="foo"
+        )
+
+    with pytest.raises(TypeError):
+        get_runner_book_from_market_book(market_book, selection_id=123, return_type=int)
+
+    assert (
+        type(
+            get_runner_book_from_market_book(
+                MarketBook(**market_book), selection_id=123
+            )
+        )
+        is RunnerBook
+    )
+    assert get_runner_book_from_market_book(market_book, runner_name="alice") is None
+    assert (
+        get_runner_book_from_market_book(market_book, runner_name="bar")["selectionId"]
+        == 456
+    )
+
+
+def test_get_market_id_from_string():
+    assert (
+        get_market_id_from_string("/srv/betfair-prices/horse-racing/1.196842297.gz")
+        == "1.196842297"
+    )
+    assert (
+        get_market_id_from_string(
+            "/srv/betfair-prices/horse-racing/1.196842297.gz", as_integer=True
+        )
+        == 196842297
+    )
+    assert (
+        get_market_id_from_string("/srv/betfair-races/31323606.2355.jsonl.gz") is None
+    )
+
+
+def test_get_race_id_from_string():
+    assert (
+        get_race_id_from_string("/srv/betfair-races/31323606.2355.jsonl.gz")
+        == "31323606.2355"
+    )
+    assert (
+        get_race_id_from_string("/srv/betfair-prices/horse-racing/1.196842297.gz")
+        is None
+    )
+
+
+def test_get_selection_id_to_runner_name_map_from_market_catalogue(
+    market_catalogue: Dict[str, Any]
+):
+    assert get_selection_id_to_runner_name_map_from_market_catalogue(
+        market_catalogue
+    ) == {123: "foo", 456: "bar"}
+    assert get_selection_id_to_runner_name_map_from_market_catalogue(
+        MarketCatalogue(**market_catalogue)
+    ) == {123: "foo", 456: "bar"}
+
+
+def test_get_win_market_id_from_race_card(race_card: Dict[str, Any]):
+    assert get_win_market_id_from_race_card(race_card) == "1.456"
+    assert get_win_market_id_from_race_card(race_card, as_integer=True) == 456
+
+
+def test_is_market_book(
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    race_card: Dict[str, Any],
+):
+    assert is_market_book(market_book)
+    assert not is_market_book(market_catalogue)
+    assert not is_market_book(race_card)
+
+    assert is_market_book(MarketBook(**market_book))
+    assert not is_market_book(MarketBook(**market_book).runners[0])
+
+
+def test_is_runner_book(
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    race_card: Dict[str, Any],
+):
+    assert not is_runner_book(market_book)
+    assert not is_runner_book(market_catalogue)
+    assert not is_runner_book(race_card)
+
+    assert is_runner_book(market_book["runners"][0])
+    assert is_runner_book(MarketBook(**market_book).runners[0])
+
+
+def test_iterate_other_active_runners(market_book: Dict[str, Any]):
+    assert next(iterate_other_active_runners(market_book, 123))["selectionId"] == 456
+    assert next(iterate_other_active_runners(market_book, 456))["selectionId"] == 123
+
+
+def test_market_book_to_data_frame(market_book: Dict[str, Any]):
+    df = market_book_to_data_frame(
+        market_book, should_format_publish_time=True, should_output_runner_names=True
+    )
+    assert len(df) == 2
+    assert df["publish_time"].iloc[0] == "2022-04-03T14:00:00.000000Z"
+    assert df["publish_time"].iloc[1] == "2022-04-03T14:00:00.000000Z"
+    assert df["runner_name"].iloc[0] == "foo"
+    assert df["runner_name"].iloc[1] == "bar"
+
+    df = market_book_to_data_frame(
+        MarketBook(**market_book),
+        should_format_publish_time=True,
+        should_output_runner_names=True,
+    )
+    assert len(df) == 2
+    assert df["publish_time"].iloc[0] == "2022-04-03T14:00:00.000000Z"
+    assert df["publish_time"].iloc[1] == "2022-04-03T14:00:00.000000Z"
+    assert df["runner_name"].iloc[0] == "foo"
+    assert df["runner_name"].iloc[1] == "bar"
+
+
+def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
+    runner_book = market_book["runners"][0]
+    with pytest.raises(ValueError):
+        remove_bet_from_runner_book(
+            runner_book, price=1.98, size=2, available_side=Side.BACK
+        )
+    with pytest.raises(ValueError):
+        remove_bet_from_runner_book(
+            RunnerBook(**runner_book), price=1.98, size=2, available_side=Side.BACK
+        )
+
+    new_runner_book = remove_bet_from_runner_book(
+        runner_book, price=1.98, size=1, available_side=Side.BACK
+    )
+    assert len(new_runner_book["ex"]["availableToBack"]) == 0
+
+    new_runner_book = remove_bet_from_runner_book(
+        RunnerBook(**runner_book), price=1.98, size=1, available_side=Side.BACK
+    )
+    assert len(new_runner_book.ex.available_to_back) == 0
 
 
 def test_random_from_market_id():
