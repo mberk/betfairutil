@@ -2243,7 +2243,7 @@ def remove_bet_from_runner_book(
             if price_size["price"] != price or price_size["size"] != size
         ]
     else:
-        for price_size in getattr(runner_book.ex, available_side.ex_key):
+        for price_size in getattr(runner_book.ex, available_side.ex_attribute):
             if price_size.price == price and price_size.size < size:
                 raise ValueError(
                     f"size = {size} but only {price_size.size} available to {available_side.ex_key} at {price_size.price}"
@@ -2251,10 +2251,10 @@ def remove_bet_from_runner_book(
 
         setattr(
             runner_book.ex,
-            available_side.ex_key,
+            available_side.ex_attribute,
             [
                 PriceSize(price=price_size.price, size=price_size.size)
-                for price_size in getattr(runner_book.ex, available_side.ex_key)
+                for price_size in getattr(runner_book.ex, available_side.ex_attribute)
                 if price_size.price != price or price_size.size != size
             ],
         )
