@@ -29,6 +29,7 @@ from betfairutil import iterate_other_active_runners
 from betfairutil import market_book_to_data_frame
 from betfairutil import prices_file_to_csv_file
 from betfairutil import random_from_market_id
+from betfairutil import read_prices_file
 from betfairutil import remove_bet_from_runner_book
 from betfairutil import Side
 
@@ -413,6 +414,38 @@ def test_prices_file_to_csv_file(
             should_format_publish_time=True,
         ).assign(market_type="MATCH_ODDS"),
     )
+
+
+def test_read_prices_file(market_definition: Dict[str, Any], market_book: Dict[str, Any], market_catalogue: Dict[str, Any], tmp_path: Path):
+    del market_definition["runners"][0]["name"]
+    del market_definition["runners"][1]["name"]
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+    market_books = read_prices_file(path_to_prices_file, market_catalogues=[market_catalogue])
+    assert len(market_books) == 1
+
+    market_books = read_prices_file(path_to_prices_file, lightweight=False, market_catalogues=[market_catalogue])
+    assert len(market_books) == 1
 
 
 def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
