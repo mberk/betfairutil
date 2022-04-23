@@ -2194,7 +2194,7 @@ def read_prices_file(
     return market_books
 
 
-def read_race_file(path_to_race_file: str) -> List[Dict[str, Any]]:
+def read_race_file(path_to_race_file: Union[str, Path]) -> List[Dict[str, Any]]:
     import smart_open
     from unittest.mock import patch
 
