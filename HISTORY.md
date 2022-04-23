@@ -1,5 +1,33 @@
 # Release History
 
+# 0.3.0 - 2022-04-23
+
+### Added
+
+* Unit tests #14
+* Various price related functions:
+    * get_spread
+    * calculate_price_difference
+    * get_inside_best_price
+    * get_outside_best_price
+    * get_best_price
+    * increment_price
+    * decrement_price
+    * is_price_the_same_or_better
+    * is_price_worse
+* Various horse racing related functions:
+    * get_race_id_from_string
+    * get_win_market_id_from_race_card
+    * read_race_file
+
+### Changed
+
+* Updated typing of all price related functions to accept Path objects
+
+### Fixed
+
+* Various fixes when using MarketBook objects instead of dictionaries
+
 ## 0.2.0 - 2022-02-17
 
 ### Added
