@@ -6,6 +6,7 @@ from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
 from math import sqrt
+from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
@@ -2016,7 +2017,7 @@ def market_book_to_data_frame(
 
 
 def prices_file_to_csv_file(
-    path_to_prices_file: str, path_to_csv_file: str, **kwargs
+    path_to_prices_file: Union[str, Path], path_to_csv_file: Union[str, Path], **kwargs
 ) -> None:
     prices_file_to_data_frame(path_to_prices_file, **kwargs).to_csv(
         path_to_csv_file, index=False
@@ -2024,7 +2025,7 @@ def prices_file_to_csv_file(
 
 
 def prices_file_to_data_frame(
-    path_to_prices_file: str,
+    path_to_prices_file: Union[str, Path],
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
@@ -2118,7 +2119,7 @@ def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
 
 
 def read_prices_file(
-    path_to_prices_file: str,
+    path_to_prices_file: Union[str, Path],
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[
