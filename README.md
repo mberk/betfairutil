@@ -13,7 +13,7 @@ Optionally, for working with Betfair prices files:
 
 # Installation
 
-Requires Python 3.6 or above.
+Requires Python 3.7 or above.
 
 If working with Betfair prices files:
 
