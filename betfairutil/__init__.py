@@ -6,6 +6,7 @@ from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
 from math import sqrt
+from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
@@ -1445,6 +1446,10 @@ class Side(enum.Enum):
         return f"availableTo{self.value}"
 
     @property
+    def ex_attribute(self):
+        return f"available_to_{self.value.lower()}"
+
+    @property
     def next_better_price_map(self):
         if self is Side.BACK:
             return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
@@ -1453,7 +1458,7 @@ class Side(enum.Enum):
 
     @property
     def next_worse_price_map(self):
-        if self is Side.LAY:
+        if self is Side.BACK:
             return BETFAIR_PRICE_TO_NEXT_PRICE_DOWN_MAP
         else:
             return BETFAIR_PRICE_TO_NEXT_PRICE_UP_MAP
@@ -1627,17 +1632,21 @@ def filter_runners(
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
     if type(market_book) is dict:
         runners = market_book["runners"]
-        return_type = dict
     else:
         runners = market_book.runners
-        return_type = RunnerBook
 
     for runner in runners:
-        if runner["status"] != status:
+        if type(runner) is dict:
+            runner_status = runner["status"]
+            selection_id = runner["selectionId"]
+        else:
+            runner_status = runner.status
+            selection_id = runner.selection_id
+        if runner_status != status:
             continue
-        if runner["selectionId"] in excluded_selection_ids:
+        if selection_id in excluded_selection_ids:
             continue
-        yield return_type(**runner)
+        yield runner
 
 
 def get_runner_book_from_market_book(
@@ -1690,7 +1699,7 @@ def get_best_price_size(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
     if type(runner) is RunnerBook:
-        return next(iter(getattr(runner.ex, side.ex_key)), None)
+        return next(iter(getattr(runner.ex, side.ex_attribute)), None)
     else:
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
@@ -2008,7 +2017,7 @@ def market_book_to_data_frame(
 
 
 def prices_file_to_csv_file(
-    path_to_prices_file: str, path_to_csv_file: str, **kwargs
+    path_to_prices_file: Union[str, Path], path_to_csv_file: Union[str, Path], **kwargs
 ) -> None:
     prices_file_to_data_frame(path_to_prices_file, **kwargs).to_csv(
         path_to_csv_file, index=False
@@ -2016,7 +2025,7 @@ def prices_file_to_csv_file(
 
 
 def prices_file_to_data_frame(
-    path_to_prices_file: str,
+    path_to_prices_file: Union[str, Path],
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
@@ -2110,7 +2119,7 @@ def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
 
 
 def read_prices_file(
-    path_to_prices_file: str,
+    path_to_prices_file: Union[str, Path],
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[
@@ -2185,7 +2194,7 @@ def read_prices_file(
     return market_books
 
 
-def read_race_file(path_to_race_file: str) -> List[Dict[str, Any]]:
+def read_race_file(path_to_race_file: Union[str, Path]) -> List[Dict[str, Any]]:
     import smart_open
     from unittest.mock import patch
 
@@ -2235,7 +2244,7 @@ def remove_bet_from_runner_book(
             if price_size["price"] != price or price_size["size"] != size
         ]
     else:
-        for price_size in getattr(runner_book.ex, available_side.ex_key):
+        for price_size in getattr(runner_book.ex, available_side.ex_attribute):
             if price_size.price == price and price_size.size < size:
                 raise ValueError(
                     f"size = {size} but only {price_size.size} available to {available_side.ex_key} at {price_size.price}"
@@ -2243,10 +2252,10 @@ def remove_bet_from_runner_book(
 
         setattr(
             runner_book.ex,
-            available_side.ex_key,
+            available_side.ex_attribute,
             [
                 PriceSize(price=price_size.price, size=price_size.size)
-                for price_size in getattr(runner_book.ex, available_side.ex_key)
+                for price_size in getattr(runner_book.ex, available_side.ex_attribute)
                 if price_size.price != price or price_size.size != size
             ],
         )
