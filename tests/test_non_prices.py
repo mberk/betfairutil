@@ -133,6 +133,10 @@ def market_book(market_definition: Dict[str, Any]):
     }
 
 
+def test_side():
+    assert Side.LAY.other_side == Side.BACK
+
+
 @pytest.mark.parametrize("use_market_book_objects", [False, True])
 def test_calculate_book_percentage(
     market_book: Dict[str, Any], use_market_book_objects: bool
