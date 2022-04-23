@@ -30,6 +30,7 @@ from betfairutil import market_book_to_data_frame
 from betfairutil import prices_file_to_csv_file
 from betfairutil import random_from_market_id
 from betfairutil import read_prices_file
+from betfairutil import read_race_file
 from betfairutil import remove_bet_from_runner_book
 from betfairutil import Side
 
@@ -373,7 +374,10 @@ def test_market_book_to_data_frame(market_book: Dict[str, Any]):
 
 
 def test_prices_file_to_csv_file(
-    market_definition: Dict[str, Any], market_book: Dict[str, Any], market_catalogue: Dict[str, Any], tmp_path: Path
+    market_definition: Dict[str, Any],
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    tmp_path: Path,
 ):
     path_to_prices_file = tmp_path / f"1.123.json.gz"
     with smart_open.open(path_to_prices_file, "w") as f:
@@ -416,7 +420,12 @@ def test_prices_file_to_csv_file(
     )
 
 
-def test_read_prices_file(market_definition: Dict[str, Any], market_book: Dict[str, Any], market_catalogue: Dict[str, Any], tmp_path: Path):
+def test_read_prices_file(
+    market_definition: Dict[str, Any],
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    tmp_path: Path,
+):
     del market_definition["runners"][0]["name"]
     del market_definition["runners"][1]["name"]
     path_to_prices_file = tmp_path / f"1.123.json.gz"
@@ -441,11 +450,93 @@ def test_read_prices_file(market_definition: Dict[str, Any], market_book: Dict[s
             )
         )
         f.write("\n")
-    market_books = read_prices_file(path_to_prices_file, market_catalogues=[market_catalogue])
+    market_books = read_prices_file(
+        path_to_prices_file, market_catalogues=[market_catalogue]
+    )
     assert len(market_books) == 1
 
-    market_books = read_prices_file(path_to_prices_file, lightweight=False, market_catalogues=[market_catalogue])
+    market_books = read_prices_file(
+        path_to_prices_file, lightweight=False, market_catalogues=[market_catalogue]
+    )
     assert len(market_books) == 1
+
+
+def test_read_race_file(tmp_path: Path):
+    path_to_race_file = tmp_path / "31323606.2355.jsonl.gz"
+    rc = {
+        "id": "31323606.2355",
+        "mid": "1.196610303",
+        "rrc": [
+            {
+                "ft": 1648165718800,
+                "id": 12883263,
+                "long": -95.5316312,
+                "lat": 29.9292254,
+                "spd": 0.11,
+                "prg": 1609.3,
+                "sfq": 0,
+            },
+            {
+                "ft": 1648165718800,
+                "id": 38368882,
+                "long": -95.5315912,
+                "lat": 29.9292075,
+                "spd": 0.16,
+                "prg": 1609.3,
+                "sfq": 0,
+            },
+            {
+                "ft": 1648165718800,
+                "id": 40957918,
+                "long": -95.5316203,
+                "lat": 29.9291875,
+                "spd": 0.11,
+                "prg": 1609.3,
+                "sfq": 0,
+            },
+            {
+                "ft": 1648165718800,
+                "id": 39605474,
+                "long": -95.5317173,
+                "lat": 29.9292874,
+                "spd": 0.86,
+                "prg": 1609.3,
+                "sfq": 0,
+            },
+            {
+                "ft": 1648165718800,
+                "id": 39605475,
+                "long": -95.5316561,
+                "lat": 29.9291837,
+                "spd": 1.14,
+                "prg": 1609.3,
+                "sfq": 0,
+            },
+        ],
+    }
+    with smart_open.open(path_to_race_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "rcm",
+                    "id": 2,
+                    "clk": "3097631015614646762",
+                    "pt": 1648165718972,
+                    "rc": [rc],
+                }
+            )
+        )
+        f.write("\n")
+    rcs = read_race_file(path_to_race_file)
+    assert len(rcs) == 1
+
+    del rcs[0]["pt"]
+    del rcs[0]["rpc"]
+    del rcs[0]["streaming_snap"]
+    del rcs[0]["streaming_unique_id"]
+    del rcs[0]["streaming_update"]
+
+    assert rcs[0] == rc
 
 
 def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
