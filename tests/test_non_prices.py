@@ -1,7 +1,11 @@
+import json
 from copy import deepcopy
+from pathlib import Path
 from typing import Any, Dict
 
+import pandas as pd
 import pytest
+import smart_open
 from betfairlightweight.resources import MarketBook
 from betfairlightweight.resources import MarketCatalogue
 from betfairlightweight.resources import MarketDefinition
@@ -23,6 +27,7 @@ from betfairutil import is_market_book
 from betfairutil import is_runner_book
 from betfairutil import iterate_other_active_runners
 from betfairutil import market_book_to_data_frame
+from betfairutil import prices_file_to_csv_file
 from betfairutil import random_from_market_id
 from betfairutil import remove_bet_from_runner_book
 from betfairutil import Side
@@ -90,6 +95,7 @@ def market_definition():
         "timezone": "GMT",
         "turnInPlayEnabled": True,
         "version": 123456789,
+        "marketType": "MATCH_ODDS",
     }
 
 
@@ -363,6 +369,50 @@ def test_market_book_to_data_frame(market_book: Dict[str, Any]):
     assert df["publish_time"].iloc[1] == "2022-04-03T14:00:00.000000Z"
     assert df["runner_name"].iloc[0] == "foo"
     assert df["runner_name"].iloc[1] == "bar"
+
+
+def test_prices_file_to_csv_file(
+    market_definition: Dict[str, Any], market_book: Dict[str, Any], market_catalogue: Dict[str, Any], tmp_path: Path
+):
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+    path_to_csv_file = tmp_path / f"1.123.csv"
+    prices_file_to_csv_file(
+        path_to_prices_file,
+        path_to_csv_file,
+        should_output_runner_names=True,
+        should_format_publish_time=True,
+        should_output_market_types=True,
+        market_catalogues=[market_catalogue],
+    )
+    pd.testing.assert_frame_equal(
+        pd.read_csv(path_to_csv_file, dtype={"market_id": str, "handicap": "float64"}),
+        market_book_to_data_frame(
+            market_book,
+            should_output_runner_names=True,
+            should_format_publish_time=True,
+        ).assign(market_type="MATCH_ODDS"),
+    )
 
 
 def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
