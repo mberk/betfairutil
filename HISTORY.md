@@ -4,7 +4,7 @@
 
 ### Added
 
-* Unit tests #14
+* Unit tests [#14](https://github.com/mberk/betfairutil/issues/14)
 * Various price related functions:
     * get_spread
     * calculate_price_difference
@@ -22,7 +22,7 @@
 
 ### Changed
 
-* Updated typing of all price related functions to accept Path objects
+* Updated typing of all prices files related functions to accept Path objects
 
 ### Fixed
 
