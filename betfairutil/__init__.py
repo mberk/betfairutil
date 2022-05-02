@@ -1817,7 +1817,7 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
 
 def get_final_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> Optional[Dict[int, str]]:
+) -> Optional[Dict[str, Any]]:
     """
     Get the last occurring market definition from the given prices file. This is typically useful for determining the outcome (winner) of the market
 
