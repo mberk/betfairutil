@@ -18,6 +18,7 @@ from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
 from betfairutil import filter_runners
+from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_race_id_from_string
 from betfairutil import get_runner_book_from_market_book
@@ -573,3 +574,40 @@ def test_random_from_market_id():
         random_from_market_id(0.5)
 
     assert random_from_market_id("1.123") == 0.5181806162370606
+
+
+def test_get_final_market_definition_from_prices_file(
+    market_definition: Dict[str, Any],
+    tmp_path: Path,
+):
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": 0,
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+    final_market_definition = get_final_market_definition_from_prices_file(
+        path_to_prices_file
+    )
+    assert final_market_definition == market_definition
+
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write("")
+
+    final_market_definition = get_final_market_definition_from_prices_file(
+        path_to_prices_file
+    )
+    assert final_market_definition is None

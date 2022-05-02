@@ -1815,6 +1815,27 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
     return selection_id_to_runner_name_map
 
 
+def get_final_market_definition_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Optional[Dict[int, str]]:
+    """
+    Get the last occurring market definition from the given prices file. This is typically useful for determining the outcome (winner) of the market
+
+    :param path_to_prices_file: The prices file to search
+    :return: None if there are no market definitions in the file, otherwise the last one found, as a dictionary
+    """
+    import orjson
+    import smart_open
+
+    market_definition = None
+    with smart_open.open(path_to_prices_file, "rb") as f:
+        for line in f:
+            if b"marketDefinition" in line:
+                market_definition = orjson.loads(line)["mc"][0]["marketDefinition"]
+
+    return market_definition
+
+
 def get_win_market_id_from_race_card(
     race_card: Dict[str, Any], as_integer: bool = False
 ) -> Optional[Union[int, str]]:
