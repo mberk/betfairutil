@@ -24,5 +24,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
-    extras_require={"files": ["betfairlightweight>=2.12.0", "smart_open"]},
+    extras_require={"files": ["betfairlightweight>=2.12.0", "orjson", "smart_open"]},
 )
