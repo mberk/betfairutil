@@ -18,6 +18,7 @@ from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
 from betfairutil import filter_runners
+from betfairutil import get_best_price_with_rollup
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_race_id_from_string
@@ -280,6 +281,18 @@ def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
         get_runner_book_from_market_book(market_book, runner_name="bar")["selectionId"]
         == 456
     )
+
+
+def test_get_best_price_with_rollup(market_book: Dict[str, Any]):
+    runner_book = get_runner_book_from_market_book(market_book, 123)
+    runner_book["ex"]["availableToBack"].append({"price": 1.97, "size": 1})
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 10) is None
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 1) == 1.98
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 2) == 1.97
+    runner_book = RunnerBook(**runner_book)
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 10) is None
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 1) == 1.98
+    assert get_best_price_with_rollup(runner_book, Side.BACK, 2) == 1.97
 
 
 def test_get_market_id_from_string():

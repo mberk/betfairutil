@@ -1721,6 +1721,35 @@ def get_best_price(
         return best_price_size["price"]
 
 
+def get_best_price_with_rollup(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side, rollup: Union[int, float]
+) -> Optional[Union[int, float]]:
+    """
+    Get the best price available on a runner on side Side when rolling up any volumes less than rollup
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :param side: Indicate whether to get the best available back or lay price
+    :param rollup: Any prices with volumes under this amount will be rolled up to lower levels in the order book
+    :return: The best price if one exists otherwise None
+    """
+    if type(runner) is RunnerBook:
+        _iter = iter(getattr(runner.ex, side.ex_attribute))
+    else:
+        _iter = iter(runner.get("ex", {}).get(side.ex_key, []))
+
+    cumulative_size = 0
+    for price_size in _iter:
+        if type(price_size) is dict:
+            price = price_size["price"]
+            size = price_size["size"]
+        else:
+            price = price_size.price
+            size = price_size.size
+        cumulative_size += size
+        if cumulative_size >= rollup:
+            return price
+
+
 def get_inside_best_price(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
