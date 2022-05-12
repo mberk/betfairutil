@@ -1,5 +1,12 @@
 # Release History
 
+# 0.3.1 - 2022-05-12
+
+### Added
+
+* get_best_price_with_rollup function
+* get_final_market_definition_from_prices_file function
+
 # 0.3.0 - 2022-04-23
 
 ### Added
