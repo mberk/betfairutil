@@ -2078,6 +2078,7 @@ def prices_file_to_data_frame(
     path_to_prices_file: Union[str, Path],
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
+    should_restrict_to_inplay: bool = False,
     max_depth: Optional[int] = None,
     should_output_market_types: bool = False,
     market_type_filter: Optional[Sequence[str]] = None,
@@ -2089,6 +2090,7 @@ def prices_file_to_data_frame(
     :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
     :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed. If market_catalogues is given then this is ignored as it is assumed the intention with providing market_catalogues is to include the runner names
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
+    :param should_restrict_to_inplay: Should only prices where the market was in play be output
     :param max_depth: Optionally limit the depth of the price ladder
     :param should_output_market_types: Should the data frame contain a market type column. Only makes sense when reading files that contain multiple market types, such as event-level official historic data files. For efficiency, the market types are added once the entire file has been processed
     :param market_type_filter: Optionally filter out market types which do not exist in the given sequence
@@ -2125,8 +2127,11 @@ def prices_file_to_data_frame(
             market_book_to_data_frame(mb, max_depth=max_depth)
             for mbs in g()
             for mb in mbs
-            if market_type_filter is None
-            or mb["marketDefinition"]["marketType"] in market_type_filter
+            if (
+                market_type_filter is None
+                or mb["marketDefinition"]["marketType"] in market_type_filter
+            )
+            and (not should_restrict_to_inplay or mb["inplay"])
         )
         if should_format_publish_time:
             df["publish_time"] = pd.to_datetime(
