@@ -14,6 +14,7 @@ from betfairlightweight.resources import RunnerBook
 from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
 from betfairutil import calculate_total_matched
+from betfairutil import convert_yards_to_metres
 from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
@@ -24,6 +25,7 @@ from betfairutil import get_market_id_from_string
 from betfairutil import get_race_id_from_string
 from betfairutil import get_runner_book_from_market_book
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
+from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
 from betfairutil import is_market_book
 from betfairutil import is_runner_book
@@ -46,7 +48,8 @@ def race_card():
                 {"marketId": "927.123", "marketType": "WIN", "numberOfWinners": 1},
                 {"marketId": "1.123", "marketType": "PLACE", "numberOfWinners": 3},
                 {"marketId": "1.456", "marketType": "WIN", "numberOfWinners": 1},
-            ]
+            ],
+            "distance": 1000,
         }
     }
 
@@ -331,6 +334,14 @@ def test_get_selection_id_to_runner_name_map_from_market_catalogue(
     assert get_selection_id_to_runner_name_map_from_market_catalogue(
         MarketCatalogue(**market_catalogue)
     ) == {123: "foo", 456: "bar"}
+
+
+def test_convert_yards_to_metres():
+    assert convert_yards_to_metres(None) is None
+
+
+def test_get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]):
+    assert get_race_distance_in_metres_from_race_card(race_card) == 914.4
 
 
 def test_get_win_market_id_from_race_card(race_card: Dict[str, Any]):
