@@ -1426,6 +1426,7 @@ BETFAIR_PRICE_TO_PRICE_INDEX_MAP = {
 }
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
 MARKET_ID_PATTERN = re.compile(r"1\.\d{9}")
+NUMBER_OF_METRES_IN_A_YARD = 0.9144
 RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
@@ -1589,6 +1590,13 @@ def calculate_total_matched(
         for r in market_book.get("runners", [])
         for ps in r.get("ex", {}).get("tradedVolume", [])
     )
+
+
+def convert_yards_to_metres(yards: Optional[Union[int, float]]) -> Optional[float]:
+    if yards is None:
+        return None
+
+    return yards * NUMBER_OF_METRES_IN_A_YARD
 
 
 def does_market_book_contain_runner_names(
@@ -1863,6 +1871,12 @@ def get_final_market_definition_from_prices_file(
                 market_definition = orjson.loads(line)["mc"][0]["marketDefinition"]
 
     return market_definition
+
+
+def get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]) -> float:
+    distance_in_yards = race_card["race"]["distance"]
+    distance_in_metres = convert_yards_to_metres(distance_in_yards)
+    return distance_in_metres
 
 
 def get_win_market_id_from_race_card(
