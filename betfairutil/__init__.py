@@ -7,9 +7,22 @@ from bisect import bisect_right
 from copy import deepcopy
 from math import sqrt
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
+
 from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
 from betfairlightweight.resources.bettingresources import MarketBook
@@ -2022,7 +2035,7 @@ def market_book_to_data_frame(
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
-) -> pd.DataFrame:
+) -> "pd.DataFrame":
     """
     Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
     runner
@@ -2044,6 +2057,8 @@ def market_book_to_data_frame(
       - publish_time (Optional): If the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) then the publish time of the market book. Otherwise this column will not be present
       - runner_name: (Optional): If should_output_runner_names is True then this column will be present. It will be populated if the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) otherwise all entries will be None
     """
+    import pandas as pd
+
     if type(market_book) is MarketBook:
         market_book = market_book._data
 
@@ -2103,7 +2118,7 @@ def prices_file_to_data_frame(
     should_output_market_types: bool = False,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
-) -> pd.DataFrame:
+) -> "pd.DataFrame":
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
 
@@ -2128,6 +2143,7 @@ def prices_file_to_data_frame(
       - publish_time: The publish time of the market book corresponding to this data point
       - runner_name: (Optional): If should_output_runner_names is True then this column will contain the name of the runner
     """
+    import pandas as pd
     import smart_open
     from unittest.mock import patch
 
