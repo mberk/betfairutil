@@ -285,14 +285,20 @@ def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
         get_runner_book_from_market_book(market_book, runner_name="bar")["selectionId"]
         == 456
     )
-
-    assert get_runner_book_from_market_book(None, runner_name="bar") is None
+    assert (
+        get_runner_book_from_market_book(
+            MarketBook(**market_book), runner_name="bar"
+        ).selection_id
+        == 456
+    )
     assert (
         get_runner_book_from_market_book(pmap(market_book), runner_name="bar")[
             "selectionId"
         ]
         == 456
     )
+
+    assert get_runner_book_from_market_book(None, runner_name="bar") is None
 
     del market_book["runners"][0]["selectionId"]
     assert get_runner_book_from_market_book(market_book, selection_id=123) is None
