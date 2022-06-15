@@ -294,6 +294,9 @@ def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
         == 456
     )
 
+    del market_book["runners"][0]["selectionId"]
+    assert get_runner_book_from_market_book(market_book, selection_id=123) is None
+
     del market_book["marketDefinition"]
     assert get_runner_book_from_market_book(market_book, runner_name="bar") is None
 

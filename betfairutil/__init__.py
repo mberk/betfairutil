@@ -1695,14 +1695,14 @@ def get_runner_book_from_market_book(
 
     if selection_id is None:
         for runner in market_book.get("marketDefinition", {}).get("runners", []):
-            if runner["name"] == runner_name:
-                selection_id = runner["id"]
+            if runner.get("name") == runner_name:
+                selection_id = runner.get("id")
                 break
         if selection_id is None:
             return
 
     for runner in market_book.get("runners", []):
-        if runner["selectionId"] == selection_id and runner["handicap"] == handicap:
+        if runner.get("selectionId") == selection_id and runner.get("handicap") == handicap:
             return return_type(**runner)
 
 
