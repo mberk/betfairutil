@@ -4,6 +4,7 @@ import itertools
 import re
 from bisect import bisect_left
 from bisect import bisect_right
+from collections import Mapping
 from copy import deepcopy
 from math import sqrt
 from pathlib import Path
@@ -1658,7 +1659,7 @@ def filter_runners(
 
 
 def get_runner_book_from_market_book(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Optional[Union[Mapping[str, Any], MarketBook]],
     selection_id: Optional[int] = None,
     runner_name: Optional[str] = None,
     handicap: float = 0.0,
@@ -1667,14 +1668,17 @@ def get_runner_book_from_market_book(
     """
     Extract a runner book from the given market book. The runner can be identified either by ID or name
 
-    :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :param market_book: A market book either as an object whose class provides the mapping interface (e.g. a dict) or as a betfairlightweight MarketBook object. Alternatively can be None - if so, None will be returned
     :param selection_id: Optionally identify the runner book to extract by the runner's ID
     :param runner_name: Alternatively identify the runner book to extract by the runner's name
     :param handicap: The handicap of the desired runner book
     :param return_type: Optionally specify the return type to be either a dict or RunnerBook. If not given then the return type will reflect the type of market_book; if market_book is a dictionary then the return value is a dictionary. If market_book is a MarketBook object then the return value will be a RunnerBook object
-    :returns: The corresponding runner book if it can be found in the market book, otherwise None. The type of the return value will depend on the return_type parameter
+    :returns: If market_book is None then None. Otherwise, the corresponding runner book if it can be found in the market book, otherwise None. The runner might not be found either because the given selection ID/runner name is not present in the market book or because the market book is missing some required fields such as the market definition. The type of the return value will depend on the return_type parameter
     :raises: ValueError if both selection_id and runner_name are given. Only one is required to uniquely identify the runner book
     """
+    if market_book is None:
+        return None
+
     if selection_id is not None and runner_name is not None:
         raise ValueError("Both selection_id and runner_name were given")
     if return_type is not None and not (
@@ -1684,21 +1688,21 @@ def get_runner_book_from_market_book(
             f"return_type must be either dict or RunnerBook ({return_type} given)"
         )
 
-    if type(market_book) is dict:
-        return_type = return_type or dict
-    else:
+    if type(market_book) is MarketBook:
         market_book = market_book._data
         return_type = return_type or RunnerBook
+    else:
+        return_type = return_type or dict
 
     if selection_id is None:
-        for runner in market_book["marketDefinition"]["runners"]:
+        for runner in market_book.get("marketDefinition", {}).get("runners", []):
             if runner["name"] == runner_name:
                 selection_id = runner["id"]
                 break
         if selection_id is None:
             return
 
-    for runner in market_book["runners"]:
+    for runner in market_book.get("runners", []):
         if runner["selectionId"] == selection_id and runner["handicap"] == handicap:
             return return_type(**runner)
 
