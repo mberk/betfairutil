@@ -1702,7 +1702,10 @@ def get_runner_book_from_market_book(
             return
 
     for runner in market_book.get("runners", []):
-        if runner.get("selectionId") == selection_id and runner.get("handicap") == handicap:
+        if (
+            runner.get("selectionId") == selection_id
+            and runner.get("handicap") == handicap
+        ):
             return return_type(**runner)
 
 
