@@ -10,6 +10,7 @@ from betfairlightweight.resources import MarketBook
 from betfairlightweight.resources import MarketCatalogue
 from betfairlightweight.resources import MarketDefinition
 from betfairlightweight.resources import RunnerBook
+from pyrsistent import pmap
 
 from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
@@ -284,6 +285,29 @@ def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
         get_runner_book_from_market_book(market_book, runner_name="bar")["selectionId"]
         == 456
     )
+    assert (
+        get_runner_book_from_market_book(
+            MarketBook(**market_book), runner_name="bar"
+        ).selection_id
+        == 456
+    )
+    assert (
+        get_runner_book_from_market_book(pmap(market_book), runner_name="bar")[
+            "selectionId"
+        ]
+        == 456
+    )
+
+    assert get_runner_book_from_market_book(None, runner_name="bar") is None
+
+    del market_book["runners"][0]["selectionId"]
+    assert get_runner_book_from_market_book(market_book, selection_id=123) is None
+
+    del market_book["marketDefinition"]
+    assert get_runner_book_from_market_book(market_book, runner_name="bar") is None
+
+    del market_book["runners"]
+    assert get_runner_book_from_market_book(market_book, selection_id=123) is None
 
 
 def test_get_best_price_with_rollup(market_book: Dict[str, Any]):
