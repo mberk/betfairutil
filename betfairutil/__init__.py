@@ -4,7 +4,7 @@ import itertools
 import re
 from bisect import bisect_left
 from bisect import bisect_right
-from collections import Mapping
+from collections.abc import Mapping
 from copy import deepcopy
 from math import sqrt
 from pathlib import Path
