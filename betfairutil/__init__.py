@@ -4,11 +4,10 @@ import itertools
 import re
 from bisect import bisect_left
 from bisect import bisect_right
-from collections.abc import Mapping
 from copy import deepcopy
 from math import sqrt
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Generator, List, Mapping, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from betfairlightweight import APIClient
