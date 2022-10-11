@@ -1444,6 +1444,11 @@ RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 
 
+class DataFrameFormatEnum(enum.Enum):
+    FULL_LADDER = "FULL_LADDER"
+    LAST_PRICE_TRADED = "LAST_PRICE_TRADED"
+
+
 class Side(enum.Enum):
     BACK = "Back"
     LAY = "Lay"
@@ -2035,6 +2040,7 @@ def market_book_to_data_frame(
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
+    _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
 ) -> "pd.DataFrame":
     """
     Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
@@ -2043,8 +2049,9 @@ def market_book_to_data_frame(
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
     :param should_output_runner_names: Should the data frame contain a runner name column. This requires the market book to have been generated from streaming data and contain a MarketDefinition
     :param should_format_publish_time: Should the publish time (if present in the market book) be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
-    :param max_depth: Optionally limit the depth of the price ladder
-    :return: A data frame with the following columns:
+    :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
+    :_format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
+    :return: A data frame whose format is determined by the format parameter. In the case of DataFrameFormatEnum.FULL_LADDER format, each row is one point on the price ladder for a particular runner. The data frame has the following columns:
 
       - market_id: The Betfair market ID
       - inplay: Whether the market is in play
@@ -2056,30 +2063,51 @@ def market_book_to_data_frame(
       - size: The amount of volume available at this point on the ladder
       - publish_time (Optional): If the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) then the publish time of the market book. Otherwise this column will not be present
       - runner_name: (Optional): If should_output_runner_names is True then this column will be present. It will be populated if the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) otherwise all entries will be None
+
+    In the case of DataFrameFormatEnum.LAST_PRICE_TRADED format, there is only one row per runner. The columns are as above except:
+
+      - There are no side, depth, price or size columns
+      - Instead there is a last_price_traded column
     """
+    assert not (
+        format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None
+    )
+
     import pandas as pd
 
     if type(market_book) is MarketBook:
         market_book = market_book._data
 
-    df = pd.DataFrame(
-        {
-            "market_id": market_book["marketId"],
-            "inplay": market_book["inplay"],
-            "selection_id": runner["selectionId"],
-            "handicap": runner["handicap"],
-            "side": side,
-            "depth": depth,
-            "price": price_size["price"],
-            "size": price_size["size"],
-        }
-        for runner in market_book["runners"]
-        for side in ["Back", "Lay"]
-        for depth, price_size in enumerate(
-            runner.get("ex", {}).get(f"availableTo{side}", [])
+    if _format == DataFrameFormatEnum.FULL_LADDER:
+        df = pd.DataFrame(
+            {
+                "market_id": market_book["marketId"],
+                "inplay": market_book["inplay"],
+                "selection_id": runner["selectionId"],
+                "handicap": runner["handicap"],
+                "side": side,
+                "depth": depth,
+                "price": price_size["price"],
+                "size": price_size["size"],
+            }
+            for runner in market_book["runners"]
+            for side in ["Back", "Lay"]
+            for depth, price_size in enumerate(
+                runner.get("ex", {}).get(f"availableTo{side}", [])
+            )
+            if max_depth is None or depth <= max_depth
         )
-        if max_depth is None or depth <= max_depth
-    )
+    else:
+        df = pd.DataFrame(
+            {
+                "market_id": market_book["marketId"],
+                "inplay": market_book["inplay"],
+                "selection_id": runner["selectionId"],
+                "handicap": runner["handicap"],
+                "last_price_traded": runner["lastPriceTraded"],
+            }
+            for runner in market_book["runners"]
+        )
 
     if "publishTime" in market_book:
         publish_time = market_book["publishTime"]
@@ -2118,6 +2146,7 @@ def prices_file_to_data_frame(
     should_output_market_types: bool = False,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
+    _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
 ) -> "pd.DataFrame":
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) directly into a data frame
@@ -2126,11 +2155,12 @@ def prices_file_to_data_frame(
     :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed. If market_catalogues is given then this is ignored as it is assumed the intention with providing market_catalogues is to include the runner names
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :param should_restrict_to_inplay: Should only prices where the market was in play be output
-    :param max_depth: Optionally limit the depth of the price ladder
+    :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
     :param should_output_market_types: Should the data frame contain a market type column. Only makes sense when reading files that contain multiple market types, such as event-level official historic data files. For efficiency, the market types are added once the entire file has been processed
     :param market_type_filter: Optionally filter out market types which do not exist in the given sequence
     :param market_catalogues: Optionally provide a list of market catalogues, as either dicts or betfairlightweight MarketCatalogue objects, that can be used to add runner names to the data frame. Only makes sense when the prices file has been recorded from the streaming API
-    :return: A data frame where each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
+    :param _format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
+    :return: A data frame whose format is determined by the format parameter. In the case of DataFrameFormatEnum.FULL_LADDER format, each row is one point on the price ladder for a particular runner at a particular publish time. The data frame has the following columns:
 
       - market_id: The Betfair market ID
       - inplay: Whether the market is in play
@@ -2142,7 +2172,16 @@ def prices_file_to_data_frame(
       - size: The amount of volume available at this point on the ladder
       - publish_time: The publish time of the market book corresponding to this data point
       - runner_name: (Optional): If should_output_runner_names is True then this column will contain the name of the runner
+
+    In the case of DataFrameFormatEnum.LAST_PRICE_TRADED format, there is one row per runner per publish time. The columns are as above except:
+
+      - There are no side, depth, price or size columns
+      - Instead there is a last_price_traded column
     """
+    assert not (
+        format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None
+    )
+
     import pandas as pd
     import smart_open
     from unittest.mock import patch
@@ -2160,7 +2199,7 @@ def prices_file_to_data_frame(
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
         df = pd.concat(
-            market_book_to_data_frame(mb, max_depth=max_depth)
+            market_book_to_data_frame(mb, max_depth=max_depth, _format=_format)
             for mbs in g()
             for mb in mbs
             if (
@@ -2199,7 +2238,8 @@ def prices_file_to_data_frame(
             df["market_type"] = df["market_id"].apply(market_id_to_market_type_map.get)
         # Fix integer column types
         df["selection_id"] = df["selection_id"].astype(int)
-        df["depth"] = df["depth"].astype(int)
+        if "depth" in df.columns:
+            df["depth"] = df["depth"].astype(int)
         return df
 
 
