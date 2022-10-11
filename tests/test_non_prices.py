@@ -462,6 +462,7 @@ def test_prices_file_to_csv_file(
         path_to_prices_file,
         path_to_csv_file,
         should_output_runner_names=True,
+        should_output_runner_statuses=True,
         should_format_publish_time=True,
         should_output_market_types=True,
         market_catalogues=[market_catalogue],
@@ -471,6 +472,7 @@ def test_prices_file_to_csv_file(
         market_book_to_data_frame(
             market_book,
             should_output_runner_names=True,
+            should_output_runner_statuses=True,
             should_format_publish_time=True,
         ).assign(market_type="MATCH_ODDS"),
     )
@@ -498,6 +500,7 @@ def test_prices_file_to_csv_file(
         path_to_prices_file,
         path_to_csv_file,
         should_output_runner_names=True,
+        should_output_runner_statuses=True,
         should_format_publish_time=True,
         should_output_market_types=True,
         market_catalogues=[market_catalogue],
@@ -508,6 +511,7 @@ def test_prices_file_to_csv_file(
         market_book_to_data_frame(
             market_book,
             should_output_runner_names=True,
+            should_output_runner_statuses=True,
             should_format_publish_time=True,
             _format=DataFrameFormatEnum.LAST_PRICE_TRADED,
         ).assign(market_type="MATCH_ODDS"),

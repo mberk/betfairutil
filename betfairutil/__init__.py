@@ -2038,6 +2038,7 @@ def make_price_betfair_valid(
 def market_book_to_data_frame(
     market_book: Union[Dict[str, Any], MarketBook],
     should_output_runner_names: bool = False,
+    should_output_runner_statuses: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
     _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
@@ -2048,6 +2049,7 @@ def market_book_to_data_frame(
 
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
     :param should_output_runner_names: Should the data frame contain a runner name column. This requires the market book to have been generated from streaming data and contain a MarketDefinition
+    :param should_output_runner_statuses: Should the data frame contain a column indicating the status for each runner (ACTIVE, REMOVED, WINNER, LOSER)
     :param should_format_publish_time: Should the publish time (if present in the market book) be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
     :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
     :_format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
@@ -2061,6 +2063,7 @@ def market_book_to_data_frame(
       - depth: The depth of this point on the ladder
       - price: The price of this point on the ladder
       - size: The amount of volume available at this point on the ladder
+      - runner_status: (Optional): If should_output_runner_statuses is True then this column will be present
       - publish_time (Optional): If the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) then the publish time of the market book. Otherwise this column will not be present
       - runner_name: (Optional): If should_output_runner_names is True then this column will be present. It will be populated if the market book was generated from streaming data (as opposed to calling the listMarketBook API endpoint) otherwise all entries will be None
 
@@ -2089,6 +2092,11 @@ def market_book_to_data_frame(
                 "depth": depth,
                 "price": price_size["price"],
                 "size": price_size["size"],
+                **(
+                    {"runner_status": runner["status"]}
+                    if should_output_runner_statuses
+                    else {}
+                ),
             }
             for runner in market_book["runners"]
             for side in ["Back", "Lay"]
@@ -2105,6 +2113,11 @@ def market_book_to_data_frame(
                 "selection_id": runner["selectionId"],
                 "handicap": runner["handicap"],
                 "last_price_traded": runner["lastPriceTraded"],
+                **(
+                    {"runner_status": runner["status"]}
+                    if should_output_runner_statuses
+                    else {}
+                ),
             }
             for runner in market_book["runners"]
         )
@@ -2140,6 +2153,7 @@ def prices_file_to_csv_file(
 def prices_file_to_data_frame(
     path_to_prices_file: Union[str, Path],
     should_output_runner_names: bool = False,
+    should_output_runner_statuses: bool = False,
     should_format_publish_time: bool = False,
     should_restrict_to_inplay: bool = False,
     max_depth: Optional[int] = None,
@@ -2153,6 +2167,7 @@ def prices_file_to_data_frame(
 
     :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
     :param should_output_runner_names: Should the data frame contain a runner name column. For efficiency, the names are added once the entire file has been processed. If market_catalogues is given then this is ignored as it is assumed the intention with providing market_catalogues is to include the runner names
+    :param should_output_runner_statuses: Should the data frame contain a column indicating the status for each runner (ACTIVE, REMOVED, WINNER, LOSER)
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :param should_restrict_to_inplay: Should only prices where the market was in play be output
     :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
@@ -2170,6 +2185,7 @@ def prices_file_to_data_frame(
       - depth: The depth of this point on the ladder
       - price: The price of this point on the ladder
       - size: The amount of volume available at this point on the ladder
+      - runner_status: (Optional): If should_output_runner_statuses is True then this column will be present
       - publish_time: The publish time of the market book corresponding to this data point
       - runner_name: (Optional): If should_output_runner_names is True then this column will contain the name of the runner
 
@@ -2199,7 +2215,12 @@ def prices_file_to_data_frame(
     with patch("builtins.open", smart_open.open):
         g = stream.get_generator()
         df = pd.concat(
-            market_book_to_data_frame(mb, max_depth=max_depth, _format=_format)
+            market_book_to_data_frame(
+                mb,
+                should_output_runner_statuses=should_output_runner_statuses,
+                max_depth=max_depth,
+                _format=_format,
+            )
             for mbs in g()
             for mb in mbs
             if (
