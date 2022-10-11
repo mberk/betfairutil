@@ -2040,7 +2040,7 @@ def market_book_to_data_frame(
     should_output_runner_names: bool = False,
     should_format_publish_time: bool = False,
     max_depth: Optional[int] = None,
-    _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER
+    _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
 ) -> "pd.DataFrame":
     """
     Construct a data frame representation of a market book. Each row is one point on the price ladder for a particular
@@ -2069,7 +2069,9 @@ def market_book_to_data_frame(
       - There are no side, depth, price or size columns
       - Instead there is a last_price_traded column
     """
-    assert not (format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None)
+    assert not (
+        format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None
+    )
 
     import pandas as pd
 
@@ -2105,7 +2107,6 @@ def market_book_to_data_frame(
                 "last_price_traded": runner["lastPriceTraded"],
             }
             for runner in market_book["runners"]
-
         )
 
     if "publishTime" in market_book:
@@ -2177,7 +2178,9 @@ def prices_file_to_data_frame(
       - There are no side, depth, price or size columns
       - Instead there is a last_price_traded column
     """
-    assert not (format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None)
+    assert not (
+        format == DataFrameFormatEnum.LAST_PRICE_TRADED and max_depth is not None
+    )
 
     import pandas as pd
     import smart_open
