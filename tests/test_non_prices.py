@@ -16,6 +16,7 @@ from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
 from betfairutil import calculate_total_matched
 from betfairutil import convert_yards_to_metres
+from betfairutil import DataFrameFormatEnum
 from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
@@ -120,6 +121,7 @@ def market_book(market_definition: Dict[str, Any]):
                     "availableToLay": [],
                     "tradedVolume": [],
                 },
+                "lastPriceTraded": 1.98,
             },
             {
                 "selectionId": 456,
@@ -130,6 +132,7 @@ def market_book(market_definition: Dict[str, Any]):
                     "availableToLay": [],
                     "tradedVolume": [],
                 },
+                "lastPriceTraded": None,
             },
         ],
         "marketDefinition": market_definition,
@@ -469,6 +472,44 @@ def test_prices_file_to_csv_file(
             market_book,
             should_output_runner_names=True,
             should_format_publish_time=True,
+        ).assign(market_type="MATCH_ODDS"),
+    )
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "ltp": 1.98},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+    prices_file_to_csv_file(
+        path_to_prices_file,
+        path_to_csv_file,
+        should_output_runner_names=True,
+        should_format_publish_time=True,
+        should_output_market_types=True,
+        market_catalogues=[market_catalogue],
+        _format=DataFrameFormatEnum.LAST_PRICE_TRADED,
+    )
+    pd.testing.assert_frame_equal(
+        pd.read_csv(path_to_csv_file, dtype={"market_id": str, "handicap": "float64"}),
+        market_book_to_data_frame(
+            market_book,
+            should_output_runner_names=True,
+            should_format_publish_time=True,
+            _format=DataFrameFormatEnum.LAST_PRICE_TRADED,
         ).assign(market_type="MATCH_ODDS"),
     )
 
