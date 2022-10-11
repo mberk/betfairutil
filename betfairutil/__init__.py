@@ -1910,6 +1910,20 @@ def get_final_market_definition_from_prices_file(
     return market_definition
 
 
+def get_pre_event_volume_traded_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+) -> Optional[Union[int, float]]:
+    g = create_market_book_generator_from_prices_file(path_to_prices_file)
+    pre_event_market_book = None
+    for market_book in g:
+        if market_book["inplay"]:
+            break
+        pre_event_market_book = market_book
+    if pre_event_market_book is not None:
+        pre_event_volume_traded = calculate_total_matched(pre_event_market_book)
+        return pre_event_volume_traded
+
+
 def get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]) -> float:
     distance_in_yards = race_card["race"]["distance"]
     distance_in_metres = convert_yards_to_metres(distance_in_yards)
@@ -2219,14 +2233,18 @@ def prices_file_to_data_frame(
     if market_catalogues:
         should_output_runner_names = True
 
-    trading = APIClient(username="", password="", app_key="")
-    stream = trading.streaming.create_historical_generator_stream(
-        file_path=path_to_prices_file,
-        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
-    )
+    snapped_market_books = []
+
+    def g():
+        snapped_market_books.extend(
+            (
+                yield from create_market_book_generator_from_prices_file(
+                    path_to_prices_file
+                )
+            )
+        )
 
     with patch("builtins.open", smart_open.open):
-        g = stream.get_generator()
         df = pd.concat(
             market_book_to_data_frame(
                 mb,
@@ -2234,8 +2252,7 @@ def prices_file_to_data_frame(
                 max_depth=max_depth,
                 _format=_format,
             )
-            for mbs in g()
-            for mb in mbs
+            for mb in g()
             if (
                 market_type_filter is None
                 or mb["marketDefinition"]["marketType"] in market_type_filter
@@ -2250,7 +2267,7 @@ def prices_file_to_data_frame(
             selection_id_to_runner_name_map = {
                 **{
                     runner["id"]: runner.get("name")
-                    for mb in stream.listener.snap()
+                    for mb in snapped_market_books
                     for runner in mb.get("marketDefinition", {}).get("runners", [])
                 },
                 **{
@@ -2267,7 +2284,7 @@ def prices_file_to_data_frame(
         if should_output_market_types:
             market_id_to_market_type_map = {
                 mb["marketId"]: mb.get("marketDefinition", {}).get("marketType")
-                for mb in stream.listener.snap()
+                for mb in snapped_market_books
             }
             df["market_type"] = df["market_id"].apply(market_id_to_market_type_map.get)
         # Fix integer column types
@@ -2281,6 +2298,47 @@ def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
     return datetime.datetime.utcfromtimestamp(publish_time / 1000).replace(
         tzinfo=datetime.timezone.utc
     )
+
+
+def create_market_book_generator_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+    lightweight: bool = True,
+    market_type_filter: Optional[Sequence[str]] = None,
+    **kwargs,
+) -> Generator[
+    Union[MarketBook, Dict[str, Any]], None, List[Union[MarketBook, Dict[str, Any]]]
+]:
+    import smart_open
+    from unittest.mock import patch
+
+    trading = APIClient(username="", password="", app_key="")
+    stream = trading.streaming.create_historical_generator_stream(
+        file_path=path_to_prices_file,
+        listener=StreamListener(
+            max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
+        ),
+    )
+
+    with patch("builtins.open", smart_open.open):
+        g = stream.get_generator()
+        for market_books in g():
+            for market_book in market_books:
+                if (
+                    market_type_filter is None
+                    or (
+                        lightweight
+                        and market_book["marketDefinition"]["marketType"]
+                        in market_type_filter
+                    )
+                    or (
+                        not lightweight
+                        and market_book.market_definition.market_type
+                        in market_type_filter
+                    )
+                ):
+                    yield market_book
+
+    return stream.listener.snap()
 
 
 def read_prices_file(
@@ -2302,35 +2360,16 @@ def read_prices_file(
     :param kwargs: Passed to StreamListener
     :return: A list of market books, either as dicts or betfairlightweight MarketBook objects depending on whether the lightweight parameter is True or False respectively
     """
-    import smart_open
-    from unittest.mock import patch
-
     market_catalogues = market_catalogues or []
 
-    trading = APIClient(username="", password="", app_key="")
-    stream = trading.streaming.create_historical_generator_stream(
-        file_path=path_to_prices_file,
-        listener=StreamListener(
-            max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
-        ),
-    )
-
-    with patch("builtins.open", smart_open.open):
-        g = stream.get_generator()
-        market_books = list(
-            mb
-            for mbs in g()
-            for mb in mbs
-            if market_type_filter is None
-            or (
-                lightweight
-                and mb["marketDefinition"]["marketType"] in market_type_filter
-            )
-            or (
-                not lightweight
-                and mb.market_definition.market_type in market_type_filter
-            )
+    market_books = list(
+        create_market_book_generator_from_prices_file(
+            path_to_prices_file=path_to_prices_file,
+            lightweight=lightweight,
+            market_type_filter=market_type_filter,
+            **kwargs,
         )
+    )
 
     if (
         market_books
