@@ -1439,6 +1439,7 @@ BETFAIR_PRICE_TO_PRICE_INDEX_MAP = {
 }
 EX_KEYS = ["availableToBack", "availableToLay", "tradedVolume"]
 MARKET_ID_PATTERN = re.compile(r"1\.\d{9}")
+EVENT_ID_PATTERN = re.compile(r"\d{8}")
 NUMBER_OF_METRES_IN_A_YARD = 0.9144
 RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
@@ -1844,9 +1845,21 @@ def get_market_id_from_string(
         return market_id
 
 
-def get_race_id_from_string(s: str) -> str:
+def get_event_id_from_string(s: str) -> Optional[int]:
     """
-    Searches the given string for a race ID in the 12345678.1234 and returns it if one is found
+    Searches the given string for an event ID in the form 12345678 and returns it if one is found. Take care to only use this function where it makes sense; if it is called on a string that contains a market ID instead of an event ID the returned integer will be nonsense
+
+    :param s: The string to search
+    :return: If a substring matching the pattern 12345678 is found then that substring otherwise None
+    """
+    match = EVENT_ID_PATTERN.search(s)
+    if match:
+        return int(match.group(0))
+
+
+def get_race_id_from_string(s: str) -> Optional[str]:
+    """
+    Searches the given string for a race ID in the form 12345678.1234 and returns it if one is found
 
     :param s: The string to search
     :return: If a substring matching the pattern 12345678.1234 is found then that substring otherwise None
