@@ -23,6 +23,7 @@ from betfairutil import EX_KEYS
 from betfairutil import filter_runners
 from betfairutil import get_best_price_with_rollup
 from betfairutil import get_final_market_definition_from_prices_file
+from betfairutil import get_event_id_from_string
 from betfairutil import get_market_id_from_string
 from betfairutil import get_race_id_from_string
 from betfairutil import get_runner_book_from_market_book
@@ -338,6 +339,13 @@ def test_get_market_id_from_string():
     )
     assert (
         get_market_id_from_string("/srv/betfair-races/31323606.2355.jsonl.gz") is None
+    )
+
+
+def test_get_event_id_from_string():
+    assert (
+        get_event_id_from_string("/srv/betfair-races/31323606.2355.jsonl.gz")
+        == 31323606
     )
 
 
