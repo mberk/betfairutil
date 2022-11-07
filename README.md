@@ -138,7 +138,10 @@ import betfairutil
 import numpy as np
 import pandas as pd
 
-folds = pd.cut([betfairutil.random_from_event_id(event_id) for event_id in event_ids], np.arange(0, 1.1, 0.1))
+folds = pd.cut(
+    [betfairutil.random_from_event_id(event_id) for event_id in event_ids],
+    np.arange(0, 1.1, 0.1)
+)
 ```
 
 # See Also
