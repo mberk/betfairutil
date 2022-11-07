@@ -1,5 +1,25 @@
 # Release History
 
+# 0.4.0 - 2022-11-07
+
+### Added
+
+* get_event_id_from_string function
+* get_pre_event_volume_traded_from_prices_file
+* get_win_market_id_from_race_card function
+
+### Changed
+
+* pandas is now an optional dependency
+* Added should_restrict_to_inplay argument to prices_file_to_data_frame
+* Made get_runner_book_from_market_book more defensive
+* Added LAST_PRICE_TRADED data frame format
+* Optionally output runner statuses when converting market books to data frames
+* Various README improvements:
+    * More hype!
+    * Badges
+    * Examples
+
 # 0.3.1 - 2022-05-12
 
 ### Added
