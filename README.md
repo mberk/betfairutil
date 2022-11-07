@@ -1,6 +1,7 @@
 # betfairutil
 
-Utility functions for working with Betfair data
+Utility functions for working with Betfair data. `betfairutil` code drives betting strategies that make millions in
+betting profits a year
 
 # Dependencies
 
