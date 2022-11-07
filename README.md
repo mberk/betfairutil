@@ -118,7 +118,7 @@ parameters or when doing cross-validation as part of backtesting. A good method 
        markets is assigned to the same group. Commonly this is achieved by setting the random "seed"
     2. This ensures results are comparable across computers and versions. One major advantage of this is facilitating
        collaboration
-4. Take account of the inherent structure in how Betfair assigned market IDs. For example, in horse racing the PLACE
+4. Take account of the inherent structure in how Betfair assigns market IDs. For example, in horse racing the PLACE
    market's market ID is typical the WIN market's ID plus 1. Naive methods for randomly assigning markets to two groups
    such as basing it on whether the final digit of the ID is odd or even will end up always assigning a given race's
    WIN and PLACE markets to different groups
