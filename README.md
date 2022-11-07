@@ -1,5 +1,10 @@
 # betfairutil
 
+![Build Status](https://github.com/mberk/betfairutil/actions/workflows/test.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/mberk/betfairutil/badge.svg?branch=master)](https://coveralls.io/github/mberk/betfairutil?branch=master)
+[![PyPI version](https://badge.fury.io/py/betfairutil.svg)](https://pypi.python.org/pypi/betfairutil)
+[![Downloads](https://pepy.tech/badge/betfairutil)](https://pepy.tech/project/betfairutil)
+
 Utility functions for working with Betfair data. `betfairutil` code drives betting strategies that make millions in
 betting profits a year
 
