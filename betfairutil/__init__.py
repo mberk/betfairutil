@@ -2193,7 +2193,7 @@ def prices_file_to_data_frame(
     should_format_publish_time: bool = False,
     should_restrict_to_inplay: bool = False,
     max_depth: Optional[int] = None,
-    should_output_market_types: bool = False,
+    market_definition_fields: Dict[str, str] = None,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
     _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
@@ -2207,7 +2207,7 @@ def prices_file_to_data_frame(
     :param should_format_publish_time: Should the publish time be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string. For efficiency, this formatting is applied once the entire file has been processed
     :param should_restrict_to_inplay: Should only prices where the market was in play be output
     :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
-    :param should_output_market_types: Should the data frame contain a market type column. Only makes sense when reading files that contain multiple market types, such as event-level official historic data files. For efficiency, the market types are added once the entire file has been processed
+    :param market_definition_fields: An optional map that controls which marketDefinition fields should be included in the data frame. The keys are the marketDefinition field names and the values are the name to use for the column in the data frame. For example, {"marketType": "market_type"}
     :param market_type_filter: Optionally filter out market types which do not exist in the given sequence
     :param market_catalogues: Optionally provide a list of market catalogues, as either dicts or betfairlightweight MarketCatalogue objects, that can be used to add runner names to the data frame. Only makes sense when the prices file has been recorded from the streaming API
     :param _format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
@@ -2238,6 +2238,7 @@ def prices_file_to_data_frame(
     import smart_open
     from unittest.mock import patch
 
+    market_definition_fields = market_definition_fields or {}
     market_catalogues = market_catalogues or []
     if market_catalogues:
         should_output_runner_names = True
@@ -2290,12 +2291,14 @@ def prices_file_to_data_frame(
             df["runner_name"] = df["selection_id"].apply(
                 selection_id_to_runner_name_map.get
             )
-        if should_output_market_types:
+        for market_definition_field, column_name in market_definition_fields.items():
             market_id_to_market_type_map = {
-                mb["marketId"]: mb.get("marketDefinition", {}).get("marketType")
+                mb["marketId"]: mb.get("marketDefinition", {}).get(
+                    market_definition_field
+                )
                 for mb in snapped_market_books
             }
-            df["market_type"] = df["market_id"].apply(market_id_to_market_type_map.get)
+            df[column_name] = df["market_id"].apply(market_id_to_market_type_map.get)
         # Fix integer column types
         df["selection_id"] = df["selection_id"].astype(int)
         if "depth" in df.columns:
