@@ -2369,6 +2369,135 @@ def create_market_book_generator_from_prices_file(
     return stream.listener.snap()
 
 
+def get_market_books_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+    publish_times: Sequence[int],
+    lightweight: bool = True,
+    **kwargs,
+) -> Dict[int, Optional[Union[MarketBook, Dict[str, Any]]]]:
+    """Extract the market books corresponding to the given publish times from a Betfair prices file
+
+    The market books are extracted as a list of tuples of publish time and market book. If a publish time does not
+    exactly appear in the prices file then the most recent market book prior to it will be returned. Any given publish
+    times which come before the first market book in the prices file will have None paired with them. This function is
+    far more memory efficient than using read_prices_file and bisect functions. Currently only intended to be used with
+    prices files that contain data for a single Betfair market
+
+    :param path_to_prices_file:
+        Where the Betfair prices file to be processed is located. This can be a local file, one stored in AWS S3, or any
+        of the other options that can be handled by the smart_open package. The file can be compressed or uncompressed
+    :param publish_times:
+        The publish times of interest to which to attach market books
+    :param lightweight:
+        Passed to StreamListener. When True, the returned market books are dicts. When false, the returned market books
+        are betfairlightweight MarketBook objects
+        the streaming API
+    :param kwargs:
+        Passed to StreamListener
+    :return:
+        A dict mapping each publish time to the corresponding market book, either as a dict or betfairlightweight
+        MarketBook object depending on whether the lightweight parameter is True or False respectively, if there is one
+        otherwise None
+    """
+    g = create_market_book_generator_from_prices_file(
+        path_to_prices_file=path_to_prices_file,
+        lightweight=lightweight,
+        **kwargs,
+    )
+
+    market_book = None
+    previous_market_book = None
+    result = {}
+    _publish_times = sorted(publish_times)
+    for market_book in g:
+        if len(_publish_times) == 0:
+            break
+
+        while _publish_times[0] < market_book["publishTime"]:
+            result[_publish_times[0]] = previous_market_book
+            _publish_times.pop(0)
+            if len(_publish_times) == 0:
+                break
+
+        previous_market_book = market_book
+
+    # Add any leftover publish times after the last market book
+    for pt in _publish_times:
+        result[pt] = market_book
+    return result
+
+
+def get_minimum_book_percentage_market_books_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+    publish_time_windows: Sequence[Tuple[int, int]],
+    lightweight: bool = True,
+    **kwargs,
+) -> Dict[Tuple[int, int], Optional[Union[MarketBook, Dict[str, Any]]]]:
+    for window in publish_time_windows:
+        assert window[0] < window[1]
+
+    g = create_market_book_generator_from_prices_file(
+        path_to_prices_file=path_to_prices_file,
+        lightweight=lightweight,
+        **kwargs,
+    )
+
+    market_book = None
+    previous_market_book = None
+    previous_market_book_book_percentage = None
+    result = {
+        window: None
+        for window in publish_time_windows
+    }
+    current_best_book_percentages = {
+        window: None
+        for window in publish_time_windows
+    }
+    _publish_time_windows = sorted(publish_time_windows, key=lambda x: x[0])
+    for market_book in g:
+        if len(_publish_time_windows) == 0:
+            break
+
+        while _publish_time_windows[0][1] < market_book["publishTime"]:
+            if result[_publish_time_windows[0]] is None:
+                result[_publish_time_windows[0]] = previous_market_book
+            _publish_time_windows.pop(0)
+            if len(_publish_time_windows) == 0:
+                break
+
+        if len(_publish_time_windows) == 0:
+            break
+
+        for window in _publish_time_windows:
+            if window[0] < market_book["publishTime"]:
+                if (
+                    previous_market_book_book_percentage is not None and (
+                        current_best_book_percentages[window] is None or
+                        current_best_book_percentages[window] > previous_market_book_book_percentage
+                    )
+                ):
+                    result[window] = previous_market_book
+                    current_best_book_percentages[window] = previous_market_book_book_percentage
+
+        previous_market_book = market_book
+        previous_market_book_book_percentage = calculate_book_percentage(
+            previous_market_book,
+            Side.BACK,
+        )
+
+    # Add any leftover publish times after the last market book
+    last_market_book_book_percentage = calculate_book_percentage(
+        market_book,
+        Side.BACK
+    )
+
+    for window in _publish_time_windows:
+        if current_best_book_percentages[window] is None or current_best_book_percentages[window] > last_market_book_book_percentage:
+            result[window] = market_book
+
+    return result
+
+
 def create_race_change_generator_from_race_file(
     path_to_race_file: Union[str, Path],
 ) -> Generator[Dict[str, Any], None, None]:
