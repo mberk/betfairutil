@@ -474,7 +474,7 @@ def test_prices_file_to_csv_file(
         should_output_runner_names=True,
         should_output_runner_statuses=True,
         should_format_publish_time=True,
-        should_output_market_types=True,
+        market_definition_fields={"marketType": "market_type"},
         market_catalogues=[market_catalogue],
     )
     pd.testing.assert_frame_equal(
@@ -512,7 +512,7 @@ def test_prices_file_to_csv_file(
         should_output_runner_names=True,
         should_output_runner_statuses=True,
         should_format_publish_time=True,
-        should_output_market_types=True,
+        market_definition_fields={"marketType": "market_type"},
         market_catalogues=[market_catalogue],
         _format=DataFrameFormatEnum.LAST_PRICE_TRADED,
     )
