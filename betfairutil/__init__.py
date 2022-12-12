@@ -1889,6 +1889,15 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
     return selection_id_to_runner_name_map
 
 
+def get_winners_from_market_definition(market_defnition: Dict[str, Any]) -> List[int]:
+    selection_ids = [
+        runner["id"]
+        for runner in market_defnition["runners"]
+        if runner["status"] == "WINNER"
+    ]
+    return selection_ids
+
+
 def get_final_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
 ) -> Optional[Dict[str, Any]]:
