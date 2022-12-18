@@ -33,7 +33,7 @@ jobs:
         pytest
     - name: Calculate Coverage
       run: |
-        coverage run -m pytest
+        coverage run --source=betfairutil -m pytest
         coverage lcov
         coverage report
     - name: Coveralls Parallel
