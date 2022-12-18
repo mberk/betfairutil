@@ -2088,7 +2088,7 @@ def market_book_to_data_frame(
     :param should_output_runner_statuses: Should the data frame contain a column indicating the status for each runner (ACTIVE, REMOVED, WINNER, LOSER)
     :param should_format_publish_time: Should the publish time (if present in the market book) be output as is (an integer number of milliseconds) or as an ISO 8601 formatted string
     :param max_depth: Optionally limit the depth of the price ladder. Should only be used when format is DataFrameFormatEnum.FULL_LADDER
-    :_format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
+    :param _format: Controls the output of the data frame. Currently, there are two options: either the full price ladder (DataFrameFormatEnum.FULL_LADDER) or just the last price traded (DataFrameFormatEnum.LAST_PRICE_TRADED)
     :return: A data frame whose format is determined by the format parameter. In the case of DataFrameFormatEnum.FULL_LADDER format, each row is one point on the price ladder for a particular runner. The data frame has the following columns:
 
       - market_id: The Betfair market ID
