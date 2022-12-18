@@ -31,6 +31,7 @@ from betfairutil import get_runner_book_from_market_book
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
 from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
+from betfairutil import get_winners_from_market_definition
 from betfairutil import is_market_book
 from betfairutil import is_runner_book
 from betfairutil import iterate_other_active_runners
@@ -763,3 +764,12 @@ def test_get_pre_event_volume_traded_from_prices_file(
         f.write("\n")
     volume_traded = get_pre_event_volume_traded_from_prices_file(path_to_prices_file)
     assert volume_traded == 2
+
+
+def test_get_winners_from_market_definition(market_definition: Dict[str, Any]):
+    assert get_winners_from_market_definition(market_definition) == []
+
+    market_definition["runners"][0]["status"] = "WINNER"
+    assert get_winners_from_market_definition(market_definition) == [
+        market_definition["runners"][0]["id"]
+    ]
