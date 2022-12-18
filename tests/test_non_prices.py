@@ -26,6 +26,7 @@ from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_event_id_from_string
 from betfairutil import get_market_id_from_string
 from betfairutil import get_pre_event_volume_traded_from_prices_file
+from betfairutil import get_race_change_from_race_file
 from betfairutil import get_race_id_from_string
 from betfairutil import get_runner_book_from_market_book
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
@@ -142,6 +143,24 @@ def market_book(market_definition: Dict[str, Any]):
         "marketId": "1.123",
         "inplay": True,
         "publishTime": 1648994400000,
+    }
+
+
+@pytest.fixture
+def race_change():
+    return {
+        "id": "31945198.2354",
+        "mid": "1.207120593",
+        "rpc": {
+            "ft": 1670024521800,
+            "g": "",
+            "st": 0,
+            "rt": 0,
+            "spd": 0,
+            "prg": 1106.4,
+            "ord": [],
+            "J": [],
+        },
     }
 
 
@@ -773,3 +792,42 @@ def test_get_winners_from_market_definition(market_definition: Dict[str, Any]):
     assert get_winners_from_market_definition(market_definition) == [
         market_definition["runners"][0]["id"]
     ]
+
+
+def test_get_race_change_from_race_file(race_change: Dict[str, Any], tmp_path: Path):
+    path_to_race_file = tmp_path / f"31945198.2354.jsonl.gz"
+    with smart_open.open(path_to_race_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "rcm",
+                    "clk": 0,
+                    "pt": race_change["rpc"]["ft"],
+                    "rc": [race_change],
+                }
+            )
+        )
+        f.write("\n")
+    with pytest.raises(AssertionError):
+        get_race_change_from_race_file(
+            path_to_race_file, gate_name="1f", publish_time=race_change["rpc"]["ft"]
+        )
+
+    assert get_race_change_from_race_file(path_to_race_file, gate_name="1f") is None
+    assert (
+        get_race_change_from_race_file(
+            path_to_race_file, publish_time=race_change["rpc"]["ft"] + 1
+        )
+        is None
+    )
+
+    assert (
+        get_race_change_from_race_file(path_to_race_file, gate_name="")["rpc"]
+        == race_change["rpc"]
+    )
+    assert (
+        get_race_change_from_race_file(
+            path_to_race_file, publish_time=race_change["rpc"]["ft"]
+        )["rpc"]
+        == race_change["rpc"]
+    )

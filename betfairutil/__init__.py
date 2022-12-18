@@ -2353,6 +2353,25 @@ def create_market_book_generator_from_prices_file(
     return stream.listener.snap()
 
 
+def create_race_change_generator_from_race_file(
+    path_to_race_file: Union[str, Path],
+) -> Generator[Dict[str, Any], None, None]:
+    import smart_open
+    from unittest.mock import patch
+
+    trading = APIClient(username="", password="", app_key="")
+    stream = trading.streaming.create_historical_generator_stream(
+        file_path=path_to_race_file,
+        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
+        operation="raceSubscription",
+    )
+    with patch("builtins.open", smart_open.open):
+        g = stream.get_generator()
+        for rcs in g():
+            for rc in rcs:
+                yield rc
+
+
 def read_prices_file(
     path_to_prices_file: Union[str, Path],
     lightweight: bool = True,
@@ -2411,18 +2430,38 @@ def read_prices_file(
 
 
 def read_race_file(path_to_race_file: Union[str, Path]) -> List[Dict[str, Any]]:
-    import smart_open
-    from unittest.mock import patch
+    race_changes = list(create_race_change_generator_from_race_file(path_to_race_file))
+    return race_changes
 
-    trading = APIClient(username="", password="", app_key="")
-    stream = trading.streaming.create_historical_generator_stream(
-        file_path=path_to_race_file,
-        listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
-        operation="raceSubscription",
-    )
-    with patch("builtins.open", smart_open.open):
-        g = stream.get_generator()
-        return [rc for rcs in g() for rc in rcs]
+
+def get_race_change_from_race_file(
+    path_to_race_file: Union[str, Path],
+    gate_name: Optional[str] = None,
+    publish_time: Optional[int] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Search a recorded race file for the first update after the given criterion. You can search EITHER by the gate name,
+    for example "1f" to get the first race change after entering the final furlong, OR by publish time. The latter is
+    useful when cross-referencing with the Betfair price stream. This function is memory efficient in that only a single
+    race change is held in memory at a time
+
+    :param path_to_race_file: The path to the recorded race file to search
+    :param gate_name: The Gmax gate name to search for, for example "1f"
+    :param publish_time: The Betfair publish time to search for
+    :return: The first race change meeting the search criterion
+    :raises: AssertionError unless exactly one of gate_name and publish_time is not None
+    """
+    assert not (gate_name is not None and publish_time is not None)
+
+    g = create_race_change_generator_from_race_file(path_to_race_file)
+    if gate_name is not None:
+        for race_change in g:
+            if (race_change.get("rpc") or {}).get("g") == gate_name:
+                return race_change
+    else:
+        for race_change in g:
+            if race_change["pt"] >= publish_time:
+                return race_change
 
 
 def remove_bet_from_runner_book(
