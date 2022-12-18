@@ -34,6 +34,7 @@ jobs:
     - name: Calculate Coverage
       run: |
         coverage run -m pytest
+        coverage lcov
         coverage report
     - name: Coveralls Parallel
       uses: coverallsapp/github-action@master
