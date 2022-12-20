@@ -1443,6 +1443,20 @@ EVENT_ID_PATTERN = re.compile(r"\d{8}")
 NUMBER_OF_METRES_IN_A_YARD = 0.9144
 RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
+_ORIGINAL_OPEN = open
+
+
+class _OpenMocker:
+    def __init__(self, path_to_file: str):
+        self.path_to_file = path_to_file
+
+    def open(self, file, *args, **kwargs):
+        if file == self.path_to_file:
+            import smart_open
+
+            return smart_open.open(file, *args, **kwargs)
+        else:
+            return _ORIGINAL_OPEN(file, *args, **kwargs)
 
 
 class DataFrameFormatEnum(enum.Enum):
@@ -2235,8 +2249,9 @@ def prices_file_to_data_frame(
     )
 
     import pandas as pd
-    import smart_open
     from unittest.mock import patch
+
+    open_mocker = _OpenMocker(path_to_prices_file)
 
     market_definition_fields = market_definition_fields or {}
     market_catalogues = market_catalogues or []
@@ -2254,7 +2269,7 @@ def prices_file_to_data_frame(
             )
         )
 
-    with patch("builtins.open", smart_open.open):
+    with patch("builtins.open", open_mocker.open):
         df = pd.concat(
             market_book_to_data_frame(
                 mb,
@@ -2320,8 +2335,9 @@ def create_market_book_generator_from_prices_file(
 ) -> Generator[
     Union[MarketBook, Dict[str, Any]], None, List[Union[MarketBook, Dict[str, Any]]]
 ]:
-    import smart_open
     from unittest.mock import patch
+
+    open_mocker = _OpenMocker(path_to_prices_file)
 
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
@@ -2331,7 +2347,7 @@ def create_market_book_generator_from_prices_file(
         ),
     )
 
-    with patch("builtins.open", smart_open.open):
+    with patch("builtins.open", open_mocker.open):
         g = stream.get_generator()
         for market_books in g():
             for market_book in market_books:
@@ -2356,8 +2372,9 @@ def create_market_book_generator_from_prices_file(
 def create_race_change_generator_from_race_file(
     path_to_race_file: Union[str, Path],
 ) -> Generator[Dict[str, Any], None, None]:
-    import smart_open
     from unittest.mock import patch
+
+    open_mocker = _OpenMocker(path_to_race_file)
 
     trading = APIClient(username="", password="", app_key="")
     stream = trading.streaming.create_historical_generator_stream(
@@ -2365,7 +2382,7 @@ def create_race_change_generator_from_race_file(
         listener=StreamListener(max_latency=None, lightweight=True, update_clk=False),
         operation="raceSubscription",
     )
-    with patch("builtins.open", smart_open.open):
+    with patch("builtins.open", open_mocker.open):
         g = stream.get_generator()
         for rcs in g():
             for rc in rcs:
