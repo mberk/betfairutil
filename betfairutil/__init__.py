@@ -2445,14 +2445,8 @@ def get_minimum_book_percentage_market_books_from_prices_file(
     market_book = None
     previous_market_book = None
     previous_market_book_book_percentage = None
-    result = {
-        window: None
-        for window in publish_time_windows
-    }
-    current_best_book_percentages = {
-        window: None
-        for window in publish_time_windows
-    }
+    result = {window: None for window in publish_time_windows}
+    current_best_book_percentages = {window: None for window in publish_time_windows}
     _publish_time_windows = sorted(publish_time_windows, key=lambda x: x[0])
     for market_book in g:
         if len(_publish_time_windows) == 0:
@@ -2470,14 +2464,15 @@ def get_minimum_book_percentage_market_books_from_prices_file(
 
         for window in _publish_time_windows:
             if window[0] < market_book["publishTime"]:
-                if (
-                    previous_market_book_book_percentage is not None and (
-                        current_best_book_percentages[window] is None or
-                        current_best_book_percentages[window] > previous_market_book_book_percentage
-                    )
+                if previous_market_book_book_percentage is not None and (
+                    current_best_book_percentages[window] is None
+                    or current_best_book_percentages[window]
+                    > previous_market_book_book_percentage
                 ):
                     result[window] = previous_market_book
-                    current_best_book_percentages[window] = previous_market_book_book_percentage
+                    current_best_book_percentages[
+                        window
+                    ] = previous_market_book_book_percentage
 
         previous_market_book = market_book
         previous_market_book_book_percentage = calculate_book_percentage(
@@ -2486,13 +2481,13 @@ def get_minimum_book_percentage_market_books_from_prices_file(
         )
 
     # Add any leftover publish times after the last market book
-    last_market_book_book_percentage = calculate_book_percentage(
-        market_book,
-        Side.BACK
-    )
+    last_market_book_book_percentage = calculate_book_percentage(market_book, Side.BACK)
 
     for window in _publish_time_windows:
-        if current_best_book_percentages[window] is None or current_best_book_percentages[window] > last_market_book_book_percentage:
+        if (
+            current_best_book_percentages[window] is None
+            or current_best_book_percentages[window] > last_market_book_book_percentage
+        ):
             result[window] = market_book
 
     return result
