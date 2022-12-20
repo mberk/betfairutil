@@ -24,7 +24,9 @@ from betfairutil import filter_runners
 from betfairutil import get_best_price_with_rollup
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_event_id_from_string
+from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
+from betfairutil import get_minimum_book_percentage_market_books_from_prices_file
 from betfairutil import get_pre_event_volume_traded_from_prices_file
 from betfairutil import get_race_change_from_race_file
 from betfairutil import get_race_id_from_string
@@ -830,4 +832,129 @@ def test_get_race_change_from_race_file(race_change: Dict[str, Any], tmp_path: P
             path_to_race_file, publish_time=race_change["rpc"]["ft"]
         )["rpc"]
         == race_change["rpc"]
+    )
+
+
+def test_get_market_books_from_prices_file(
+    market_definition: Dict[str, Any],
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    tmp_path: Path,
+):
+    del market_definition["runners"][0]["name"]
+    del market_definition["runners"][1]["name"]
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+    assert (
+        get_market_books_from_prices_file(path_to_prices_file, publish_times=[]) == {}
+    )
+    assert get_market_books_from_prices_file(
+        path_to_prices_file, publish_times=[0]
+    ) == {0: None}
+    assert (
+        get_market_books_from_prices_file(
+            path_to_prices_file, publish_times=[market_book["publishTime"]]
+        )[market_book["publishTime"]]
+        is not None
+    )
+
+
+def test_get_minimum_book_percentage_market_books_from_prices_file(
+    market_definition: Dict[str, Any],
+    market_book: Dict[str, Any],
+    market_catalogue: Dict[str, Any],
+    tmp_path: Path,
+):
+    del market_definition["runners"][0]["name"]
+    del market_definition["runners"][1]["name"]
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"] + 50,
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.99, 1]]},
+                                {"id": 456, "atb": [[1.99, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+    with pytest.raises(AssertionError):
+        get_minimum_book_percentage_market_books_from_prices_file(
+            path_to_prices_file, publish_time_windows=[(1, 0)]
+        )
+
+    assert (
+        get_minimum_book_percentage_market_books_from_prices_file(
+            path_to_prices_file, publish_time_windows=[]
+        )
+        == {}
+    )
+    assert get_minimum_book_percentage_market_books_from_prices_file(
+        path_to_prices_file, publish_time_windows=[(0, 1)]
+    ) == {(0, 1): None}
+    assert (
+        get_minimum_book_percentage_market_books_from_prices_file(
+            path_to_prices_file, publish_time_windows=[(0, market_book["publishTime"])]
+        )[(0, market_book["publishTime"])]
+        is not None
+    )
+    assert (
+        get_minimum_book_percentage_market_books_from_prices_file(
+            path_to_prices_file,
+            publish_time_windows=[(0, market_book["publishTime"] + 50)],
+        )[(0, market_book["publishTime"] + 50)]
+        is not None
     )

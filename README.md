@@ -149,6 +149,24 @@ folds = pd.cut(
 )
 ```
 
+## Extract Market Books of Interest
+
+`betfairutil` contains functions for efficiently extracting market books at times of interest rather than having to read
+the entire sequence of market books into memory. This example also illustrates some functionality the package provides
+for working with the Betfair race stream. First, we work out the exact time when the race enters the final furlong.
+Then, we extract the market book at this moment in time
+
+```python
+import betfairutil
+
+race_change = betfairutil.get_race_change_from_race_file(path_to_race_file, gate_name="1f")
+publish_time = race_change["pt"]
+market_book = betfairutil.get_market_books_from_prices_file(
+    path_to_prices_file,
+    publish_times=[publish_time]
+)[publish_time]
+```
+
 # See Also
 
 * There is some inevitable overlap between this package and [flumine's](https://github.com/liampauling/flumine) own
