@@ -1,3 +1,4 @@
+import datetime
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -14,6 +15,7 @@ from pyrsistent import pmap
 
 from betfairutil import calculate_book_percentage
 from betfairutil import calculate_market_book_diff
+from betfairutil import calculate_order_book_imbalance
 from betfairutil import calculate_total_matched
 from betfairutil import convert_yards_to_metres
 from betfairutil import DataFrameFormatEnum
@@ -26,11 +28,15 @@ from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_event_id_from_string
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
+from betfairutil import get_market_time_as_datetime
 from betfairutil import get_minimum_book_percentage_market_books_from_prices_file
 from betfairutil import get_pre_event_volume_traded_from_prices_file
 from betfairutil import get_race_change_from_race_file
 from betfairutil import get_race_id_from_string
 from betfairutil import get_runner_book_from_market_book
+from betfairutil import get_second_best_price
+from betfairutil import get_second_best_price_size
+from betfairutil import get_seconds_to_market_time
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
 from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
@@ -255,7 +261,10 @@ def test_does_market_book_contain_runner_names(market_book: Dict[str, Any]):
     assert does_market_book_contain_runner_names(market_book)
     assert not does_market_book_contain_runner_names(MarketBook(**market_book))
     assert does_market_book_contain_runner_names(
-        MarketBook(**market_book, market_definition=market_book["marketDefinition"])
+        MarketBook(
+            **market_book,
+            market_definition=MarketDefinition(**market_book["marketDefinition"]),
+        )
     )
 
 
@@ -957,4 +966,92 @@ def test_get_minimum_book_percentage_market_books_from_prices_file(
             publish_time_windows=[(0, market_book["publishTime"] + 50)],
         )[(0, market_book["publishTime"] + 50)]
         is not None
+    )
+
+
+def test_calculate_order_book_imbalance(market_book: Dict[str, Any]):
+    runner_book = market_book["runners"][0]
+    runner_book["ex"]["availableToLay"].append({"price": 1.99, "size": 2})
+
+    assert calculate_order_book_imbalance(runner_book) == -1.0 / 3.0
+    assert calculate_order_book_imbalance(RunnerBook(**runner_book)) == -1.0 / 3.0
+
+
+def test_get_second_best_price_size(market_book: Dict[str, Any]):
+    runner_book = market_book["runners"][0]
+
+    assert get_second_best_price_size(runner_book, Side.BACK) is None
+    assert get_second_best_price_size(RunnerBook(**runner_book), Side.BACK) is None
+
+    runner_book["ex"]["availableToBack"].append({"price": 1.97, "size": 2})
+
+    assert get_second_best_price_size(runner_book, Side.BACK) == {
+        "price": 1.97,
+        "size": 2,
+    }
+
+    second_best_price_size = get_second_best_price_size(
+        RunnerBook(**runner_book), Side.BACK
+    )
+    assert second_best_price_size.price == 1.97
+    assert second_best_price_size.size == 2
+
+
+def test_get_second_best_price(market_book: Dict[str, Any]):
+    runner_book = market_book["runners"][0]
+
+    assert get_second_best_price(runner_book, Side.BACK) is None
+    assert get_second_best_price(RunnerBook(**runner_book), Side.BACK) is None
+
+    runner_book["ex"]["availableToBack"].append({"price": 1.97, "size": 2})
+
+    assert get_second_best_price(runner_book, Side.BACK) == 1.97
+    assert get_second_best_price(RunnerBook(**runner_book), Side.BACK) == 1.97
+
+
+def test_get_market_time_as_datetime(market_book: Dict[str, Any]):
+    assert get_market_time_as_datetime(market_book) == datetime.datetime(
+        year=2022,
+        month=4,
+        day=3,
+        hour=14,
+        minute=0,
+        second=0,
+        tzinfo=datetime.timezone.utc,
+    )
+    assert get_market_time_as_datetime(
+        MarketBook(
+            **market_book,
+            market_definition=MarketDefinition(**market_book["marketDefinition"]),
+        )
+    ) == datetime.datetime(
+        year=2022,
+        month=4,
+        day=3,
+        hour=14,
+        minute=0,
+        second=0,
+        tzinfo=datetime.timezone.utc,
+    )
+
+
+def test_get_seconds_to_market_time(market_book: Dict[str, Any]):
+    current_time = datetime.datetime.strptime(
+        "2022-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.000Z"
+    ).replace(tzinfo=datetime.timezone.utc)
+    assert get_seconds_to_market_time(market_book, current_time) == 7999200.0
+    assert (
+        get_seconds_to_market_time(market_book, int(current_time.timestamp() * 1000))
+        == 7999200.0
+    )
+
+    assert get_seconds_to_market_time(market_book) == 0.0
+    assert (
+        get_seconds_to_market_time(
+            MarketBook(
+                **market_book,
+                market_definition=MarketDefinition(**market_book["marketDefinition"]),
+            )
+        )
+        == 0.0
     )
