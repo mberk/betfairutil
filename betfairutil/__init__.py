@@ -1592,6 +1592,25 @@ def calculate_market_book_diff(
     return MarketBookDiff(diff)
 
 
+def calculate_order_book_imbalance(
+    runner_book: Union[Dict[str, Any], RunnerBook]
+) -> Optional[float]:
+    best_back_price_size = get_best_price_size(runner_book, Side.BACK)
+    if best_back_price_size is not None:
+        best_lay_price_size = get_best_price_size(runner_book, Side.LAY)
+        if best_lay_price_size is not None:
+            if type(best_back_price_size) is PriceSize:
+                back_size = best_back_price_size.size
+                lay_size = best_lay_price_size.size
+            else:
+                back_size = best_back_price_size["size"]
+                lay_size = best_lay_price_size["size"]
+
+            numerator = back_size - lay_size
+            denominator = back_size + lay_size
+            return numerator / denominator
+
+
 def calculate_price_difference(a: Union[int, float], b: Union[int, float]) -> int:
     """
     Calculate the price difference between two prices as the number of steps on the Betfair price ladder. For example, the difference between 1.03 and 1.01 is 2. Conversely, the difference between 1.01 and 1.03 is -2
@@ -1766,6 +1785,34 @@ def get_best_price(
         return best_price_size.price
     elif type(best_price_size) is dict:
         return best_price_size["price"]
+
+
+def get_price_size_by_depth(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side, depth: int
+) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    if type(runner) is RunnerBook:
+        available = getattr(runner.ex, side.ex_attribute)
+    else:
+        available = runner.get("ex", {}).get(side.ex_key, [])
+
+    if len(available) > depth:
+        return available[depth]
+
+
+def get_second_best_price_size(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    return get_price_size_by_depth(runner=runner, side=side, depth=1)
+
+
+def get_second_best_price(
+    runner: Union[Dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[int, float]]:
+    second_best_price_size = get_second_best_price_size(runner, side)
+    if type(second_best_price_size) is PriceSize:
+        return second_best_price_size.price
+    elif type(second_best_price_size) is dict:
+        return second_best_price_size["price"]
 
 
 def get_best_price_with_rollup(
@@ -1962,6 +2009,61 @@ def get_win_market_id_from_race_card(
             if as_integer:
                 market_id = int(market_id[2:])
             return market_id
+
+
+def get_market_time_as_datetime(
+    market_book: Union[Dict[str, Any], MarketBook]
+) -> datetime.datetime:
+    """
+    Extract the market time - i.e. the time at which the market is due to start - as a TIMEZONE AWARE datetime object
+
+    :param market_book: The market book either as a dictionary or betfairlightweight MarketBook object from which to
+        extract the market (start) time
+    :return: The market (start) time as a TIMEZONE AWARE datetime object
+    """
+    if type(market_book) is MarketBook:
+        market_time_datetime = market_book.market_definition.market_time.replace(
+            tzinfo=datetime.timezone.utc
+        )
+    else:
+        market_time_string = market_book["marketDefinition"]["marketTime"]
+        market_time_datetime = datetime.datetime.strptime(
+            market_time_string, "%Y-%m-%dT%H:%M:%S.000Z"
+        ).replace(tzinfo=datetime.timezone.utc)
+
+    return market_time_datetime
+
+
+def get_seconds_to_market_time(
+    market_book: Union[Dict[str, Any], MarketBook],
+    current_time: Optional[Union[int, datetime.datetime]] = None,
+) -> float:
+    """
+    Given a market book and an optional notional current time, extract the market (start) time from the market book and
+    calculate the difference in seconds between it and the current time. If current_time is not provided then the
+    publish time of the market book will be used
+
+    :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :param current_time: An optional notional current time, either as an integer number of milliseconds since the Unix
+        epoch or a datetime object
+    :return: The number of seconds between the market time and current_time if provided, otherwise the number of seconds
+        between the market time and the publish time of the market book
+    """
+    market_time = get_market_time_as_datetime(market_book)
+
+    if current_time is None:
+        if type(market_book) is MarketBook:
+            current_time = market_book.publish_time.replace(
+                tzinfo=datetime.timezone.utc
+            )
+        else:
+            current_time = market_book["publishTime"]
+
+    if type(current_time) is int:
+        current_time = publish_time_to_datetime(current_time)
+
+    seconds_to_market_time = (market_time - current_time).total_seconds()
+    return seconds_to_market_time
 
 
 def decrement_price(price: Union[int, float]) -> Optional[Union[int, float]]:
