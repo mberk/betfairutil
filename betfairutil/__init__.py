@@ -2624,7 +2624,8 @@ def create_race_change_generator_from_race_file(
 
 
 def get_publish_time_from_object(o: Union[Dict[str, Any], MarketBook]) -> int:
-    return getattr(o, "_data", o).get("publishTime", o.get("pt"))
+    _data = getattr(o, "_data", o)
+    return _data.get("publishTime", _data.get("pt"))
 
 
 def create_combined_market_book_and_race_change_generator(
