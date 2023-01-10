@@ -2011,6 +2011,13 @@ def get_win_market_id_from_race_card(
             return market_id
 
 
+def get_win_market_id_from_race_file(
+    path_to_race_file: Union[str, Path],
+) -> Optional[str]:
+    for race_change in create_race_change_generator_from_race_file(path_to_race_file):
+        return race_change["mid"]
+
+
 def get_market_time_as_datetime(
     market_book: Union[Dict[str, Any], MarketBook]
 ) -> datetime.datetime:
