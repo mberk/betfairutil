@@ -2623,7 +2623,7 @@ def create_race_change_generator_from_race_file(
                 yield rc
 
 
-def get_publish_time_from_object(o: Union[dict[str, Any], MarketBook]) -> int:
+def get_publish_time_from_object(o: Union[Dict[str, Any], MarketBook]) -> int:
     return getattr(o, "_data", o).get("publishTime", o.get("pt"))
 
 
