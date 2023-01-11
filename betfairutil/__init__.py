@@ -1983,10 +1983,10 @@ def get_bsp_from_prices_file(
     return get_bsp_from_market_definition(market_definition)
 
 
-def get_winners_from_market_definition(market_defnition: Dict[str, Any]) -> List[int]:
+def get_winners_from_market_definition(market_definition: Dict[str, Any]) -> List[int]:
     selection_ids = [
         runner["id"]
-        for runner in market_defnition["runners"]
+        for runner in market_definition["runners"]
         if runner["status"] == "WINNER"
     ]
     return selection_ids
