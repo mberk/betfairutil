@@ -18,6 +18,7 @@ from betfairutil import calculate_market_book_diff
 from betfairutil import calculate_order_book_imbalance
 from betfairutil import calculate_total_matched
 from betfairutil import convert_yards_to_metres
+from betfairutil import create_combined_market_book_and_race_change_generator
 from betfairutil import DataFrameFormatEnum
 from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
@@ -40,6 +41,7 @@ from betfairutil import get_seconds_to_market_time
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
 from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
+from betfairutil import get_win_market_id_from_race_file
 from betfairutil import get_winners_from_market_definition
 from betfairutil import is_market_book
 from betfairutil import is_runner_book
@@ -170,6 +172,57 @@ def race_change():
             "J": [],
         },
     }
+
+
+@pytest.fixture
+def path_to_race_file(race_change: Dict[str, Any], tmp_path: Path):
+    path_to_race_file = tmp_path / f"31945198.2354.jsonl.gz"
+    with smart_open.open(path_to_race_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "rcm",
+                    "clk": 0,
+                    "pt": race_change["rpc"]["ft"],
+                    "rc": [race_change],
+                }
+            )
+        )
+        f.write("\n")
+
+    return path_to_race_file
+
+
+@pytest.fixture
+def path_to_prices_file(
+    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+):
+    del market_definition["runners"][0]["name"]
+    del market_definition["runners"][1]["name"]
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+    return path_to_prices_file
 
 
 def test_side():
@@ -559,35 +612,9 @@ def test_prices_file_to_csv_file(
 
 
 def test_read_prices_file(
-    market_definition: Dict[str, Any],
-    market_book: Dict[str, Any],
+    path_to_prices_file: Path,
     market_catalogue: Dict[str, Any],
-    tmp_path: Path,
 ):
-    del market_definition["runners"][0]["name"]
-    del market_definition["runners"][1]["name"]
-    path_to_prices_file = tmp_path / f"1.123.json.gz"
-    with smart_open.open(path_to_prices_file, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [
-                                {"id": 123, "atb": [[1.98, 1]]},
-                                {"id": 456, "atb": [[1.98, 1]]},
-                            ],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
     market_books = read_prices_file(
         path_to_prices_file, market_catalogues=[market_catalogue]
     )
@@ -599,82 +626,17 @@ def test_read_prices_file(
     assert len(market_books) == 1
 
 
-def test_read_race_file(tmp_path: Path):
-    path_to_race_file = tmp_path / "31323606.2355.jsonl.gz"
-    rc = {
-        "id": "31323606.2355",
-        "mid": "1.196610303",
-        "rrc": [
-            {
-                "ft": 1648165718800,
-                "id": 12883263,
-                "long": -95.5316312,
-                "lat": 29.9292254,
-                "spd": 0.11,
-                "prg": 1609.3,
-                "sfq": 0,
-            },
-            {
-                "ft": 1648165718800,
-                "id": 38368882,
-                "long": -95.5315912,
-                "lat": 29.9292075,
-                "spd": 0.16,
-                "prg": 1609.3,
-                "sfq": 0,
-            },
-            {
-                "ft": 1648165718800,
-                "id": 40957918,
-                "long": -95.5316203,
-                "lat": 29.9291875,
-                "spd": 0.11,
-                "prg": 1609.3,
-                "sfq": 0,
-            },
-            {
-                "ft": 1648165718800,
-                "id": 39605474,
-                "long": -95.5317173,
-                "lat": 29.9292874,
-                "spd": 0.86,
-                "prg": 1609.3,
-                "sfq": 0,
-            },
-            {
-                "ft": 1648165718800,
-                "id": 39605475,
-                "long": -95.5316561,
-                "lat": 29.9291837,
-                "spd": 1.14,
-                "prg": 1609.3,
-                "sfq": 0,
-            },
-        ],
-    }
-    with smart_open.open(path_to_race_file, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "op": "rcm",
-                    "id": 2,
-                    "clk": "3097631015614646762",
-                    "pt": 1648165718972,
-                    "rc": [rc],
-                }
-            )
-        )
-        f.write("\n")
+def test_read_race_file(race_change: Dict[str, Any], path_to_race_file: Path):
     rcs = read_race_file(path_to_race_file)
     assert len(rcs) == 1
 
     del rcs[0]["pt"]
-    del rcs[0]["rpc"]
+    del rcs[0]["rrc"]
     del rcs[0]["streaming_snap"]
     del rcs[0]["streaming_unique_id"]
     del rcs[0]["streaming_update"]
 
-    assert rcs[0] == rc
+    assert rcs[0] == race_change
 
 
 def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
@@ -710,28 +672,8 @@ def test_random_from_market_id():
 
 
 def test_get_final_market_definition_from_prices_file(
-    market_definition: Dict[str, Any],
-    tmp_path: Path,
+    market_definition: Dict[str, Any], path_to_prices_file: Path
 ):
-    path_to_prices_file = tmp_path / f"1.123.json.gz"
-    with smart_open.open(path_to_prices_file, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": 0,
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
-
     final_market_definition = get_final_market_definition_from_prices_file(
         path_to_prices_file
     )
@@ -805,20 +747,9 @@ def test_get_winners_from_market_definition(market_definition: Dict[str, Any]):
     ]
 
 
-def test_get_race_change_from_race_file(race_change: Dict[str, Any], tmp_path: Path):
-    path_to_race_file = tmp_path / f"31945198.2354.jsonl.gz"
-    with smart_open.open(path_to_race_file, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "op": "rcm",
-                    "clk": 0,
-                    "pt": race_change["rpc"]["ft"],
-                    "rc": [race_change],
-                }
-            )
-        )
-        f.write("\n")
+def test_get_race_change_from_race_file(
+    race_change: Dict[str, Any], path_to_race_file: Path
+):
     with pytest.raises(AssertionError):
         get_race_change_from_race_file(
             path_to_race_file, gate_name="1f", publish_time=race_change["rpc"]["ft"]
@@ -1055,3 +986,29 @@ def test_get_seconds_to_market_time(market_book: Dict[str, Any]):
         )
         == 0.0
     )
+
+
+def test_get_win_market_id_from_race_file(
+    race_change: Dict[str, Any], path_to_race_file: Path
+):
+    assert get_win_market_id_from_race_file(path_to_race_file) == race_change["mid"]
+
+    with smart_open.open(path_to_race_file, "w"):
+        pass
+
+    assert get_win_market_id_from_race_file(path_to_race_file) is None
+
+
+def test_create_combined_market_book_and_race_change_generator(
+    path_to_race_file: Path, path_to_prices_file: Path
+):
+    objects = list(
+        create_combined_market_book_and_race_change_generator(
+            path_to_prices_file=path_to_prices_file,
+            path_to_race_file=path_to_race_file,
+            lightweight=False,
+        )
+    )
+
+    assert type(objects[0]) is MarketBook
+    assert type(objects[1]) is dict

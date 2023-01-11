@@ -1,5 +1,6 @@
 import datetime
 import enum
+import heapq
 import itertools
 import re
 from bisect import bisect_left
@@ -2011,6 +2012,13 @@ def get_win_market_id_from_race_card(
             return market_id
 
 
+def get_win_market_id_from_race_file(
+    path_to_race_file: Union[str, Path],
+) -> Optional[str]:
+    for race_change in create_race_change_generator_from_race_file(path_to_race_file):
+        return race_change["mid"]
+
+
 def get_market_time_as_datetime(
     market_book: Union[Dict[str, Any], MarketBook]
 ) -> datetime.datetime:
@@ -2613,6 +2621,34 @@ def create_race_change_generator_from_race_file(
         for rcs in g():
             for rc in rcs:
                 yield rc
+
+
+def get_publish_time_from_object(o: Union[Dict[str, Any], MarketBook]) -> int:
+    _data = getattr(o, "_data", o)
+    return _data.get("publishTime", _data.get("pt"))
+
+
+def create_combined_market_book_and_race_change_generator(
+    path_to_prices_file: Union[str, Path],
+    path_to_race_file: Union[str, Path],
+    lightweight: bool = True,
+    market_type_filter: Optional[Sequence[str]] = None,
+    **kwargs,
+):
+    market_book_generator = create_market_book_generator_from_prices_file(
+        path_to_prices_file=path_to_prices_file,
+        lightweight=lightweight,
+        market_type_filter=market_type_filter,
+        **kwargs,
+    )
+    race_change_generator = create_race_change_generator_from_race_file(
+        path_to_race_file
+    )
+    yield from heapq.merge(
+        market_book_generator,
+        race_change_generator,
+        key=lambda x: get_publish_time_from_object(x),
+    )
 
 
 def read_prices_file(
