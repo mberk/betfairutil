@@ -1951,6 +1951,38 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
     return selection_id_to_runner_name_map
 
 
+def get_bsp_from_market_definition(
+    market_definition: Dict[str, Any]
+) -> Dict[int, Optional[Union[int, float]]]:
+    """
+    Extract a dictionary mapping selection ID to Betfair starting price from a market definition object. Only gives a
+    meaningful result when a market definition from after reconciliation of Betfair starting price is used
+
+    :param market_definition: A market definition either as a dictionary or betfairlightweight MarketDefinition object
+        from which to extract the Betfair starting prices
+    :return: A dictionary mapping selection ID to Betfair starting price
+    """
+    bsp = {runner["id"]: runner.get("bsp") for runner in market_definition["runners"]}
+    return bsp
+
+
+def get_bsp_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Dict[int, Optional[Union[int, float]]]:
+    """
+    Extract a dictionary mapping selection ID to Betfair starting price from the given prices file. Practically
+    speaking, the final market definition is extracted from the prices file then the Betfair starting prices are
+    extracted from that market definition
+
+    :param path_to_prices_file: The prices file from which to extract the Betfair starting prices
+    :return: A dictionary mapping selection ID to Betfair starting price
+    """
+    market_definition = get_final_market_definition_from_prices_file(
+        path_to_prices_file
+    )
+    return get_bsp_from_market_definition(market_definition)
+
+
 def get_winners_from_market_definition(market_defnition: Dict[str, Any]) -> List[int]:
     selection_ids = [
         runner["id"]
