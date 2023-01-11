@@ -2027,6 +2027,70 @@ def get_pre_event_volume_traded_from_prices_file(
         return pre_event_volume_traded
 
 
+def _is_exchange_win_market(d: Dict[str, Any]) -> bool:
+    return d["marketType"] == "WIN" and d["marketId"].startswith("1.")
+
+
+def get_bsp_from_race_result(
+    race_result: Union[Dict[str, Any], str, Path]
+) -> Dict[int, Optional[Union[int, float]]]:
+    """
+    Extract a dictionary mapping selection ID to Betfair starting price from a race result object scraped from the
+    undocumented RaceCard endpoint (see
+    https://github.com/betcode-org/betfair/blob/master/betfairlightweight/endpoints/racecard.py)
+
+    :param race_result: Either the race result object as a dictionary or the path to a JSON file containing the race
+        result object
+    :return: a dictionary mapping selection ID to Betfair starting price
+    """
+    if type(race_result) is not dict:
+        import orjson
+        import smart_open
+
+        with smart_open.open(race_result, "r") as f:
+            race_result = orjson.loads(f.read())
+
+    bsp = {}
+    for runner in race_result["runners"]:
+        for selection in runner.get("selections", []):
+            if _is_exchange_win_market(selection):
+                selection_id = int(selection["selectionId"])
+                bsp[selection_id] = selection["bsp"]
+                break
+
+    return bsp
+
+
+def get_winners_from_race_result(
+    race_result: Union[Dict[str, Any], str, Path]
+) -> List[int]:
+    """
+    Extract a list of winning selection IDs from a race result object scraped from the undocumented RaceCard endpoint
+    (see https://github.com/betcode-org/betfair/blob/master/betfairlightweight/endpoints/racecard.py)
+
+    :param race_result: Either the race result object as a dictionary or the path to a JSON file containing the race
+        result object
+    :return: a list of winning selection IDs
+    """
+    if type(race_result) is not dict:
+        import orjson
+        import smart_open
+
+        with smart_open.open(race_result, "r") as f:
+            race_result = orjson.loads(f.read())
+
+    winning_selection_ids = []
+    for runner in race_result["runners"]:
+        if runner.get("position") != "1":
+            continue
+
+        for selection in runner.get("selections", []):
+            if _is_exchange_win_market(selection):
+                winning_selection_ids.append(int(selection["selectionId"]))
+
+    return winning_selection_ids
+
+
 def get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]) -> float:
     distance_in_yards = race_card["race"]["distance"]
     distance_in_metres = convert_yards_to_metres(distance_in_yards)
