@@ -25,6 +25,9 @@ from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
 from betfairutil import filter_runners
 from betfairutil import get_best_price_with_rollup
+from betfairutil import get_bsp_from_market_definition
+from betfairutil import get_bsp_from_prices_file
+from betfairutil import get_bsp_from_race_result
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_event_id_from_string
 from betfairutil import get_market_books_from_prices_file
@@ -43,6 +46,7 @@ from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
 from betfairutil import get_win_market_id_from_race_file
 from betfairutil import get_winners_from_market_definition
+from betfairutil import get_winners_from_race_result
 from betfairutil import is_market_book
 from betfairutil import is_runner_book
 from betfairutil import iterate_other_active_runners
@@ -67,6 +71,42 @@ def race_card():
             ],
             "distance": 1000,
         }
+    }
+
+
+@pytest.fixture
+def race_result():
+    return {
+        "runners": [
+            {
+                "horseName": "foo",
+                "position": "1",
+                "selections": [
+                    {"marketId": "924.123", "marketType": "WIN", "selectionId": "123"},
+                    {"marketId": "927.123", "marketType": "WIN", "selectionId": "123"},
+                    {
+                        "marketId": "1.123",
+                        "marketType": "WIN",
+                        "selectionId": "123",
+                        "bsp": 1.5,
+                    },
+                ],
+            },
+            {
+                "horseName": "bar",
+                "position": "2",
+                "selections": [
+                    {"marketId": "924.123", "marketType": "WIN", "selectionId": "456"},
+                    {"marketId": "927.123", "marketType": "WIN", "selectionId": "456"},
+                    {
+                        "marketId": "1.123",
+                        "marketType": "WIN",
+                        "selectionId": "456",
+                        "bsp": 3.0,
+                    },
+                ],
+            },
+        ]
     }
 
 
@@ -172,6 +212,15 @@ def race_change():
             "J": [],
         },
     }
+
+
+@pytest.fixture
+def path_to_race_result_file(race_result: Dict[str, Any], tmp_path: Path):
+    path_to_race_result_file = tmp_path / "race-result.gz"
+    with smart_open.open(path_to_race_result_file, "w") as f:
+        f.write(json.dumps(race_result))
+
+    return path_to_race_result_file
 
 
 @pytest.fixture
@@ -1012,3 +1061,30 @@ def test_create_combined_market_book_and_race_change_generator(
 
     assert type(objects[0]) is MarketBook
     assert type(objects[1]) is dict
+
+
+def test_get_bsp_from_race_result(
+    race_result: Dict[str, Any], path_to_race_result_file: Path
+):
+    assert get_bsp_from_race_result(race_result) == {123: 1.5, 456: 3.0}
+    assert get_bsp_from_race_result(path_to_race_result_file) == {123: 1.5, 456: 3.0}
+
+
+def test_get_winners_from_race_result(
+    race_result: Dict[str, Any], path_to_race_result_file: Path
+):
+    assert get_winners_from_race_result(race_result) == [123]
+    assert get_winners_from_race_result(path_to_race_result_file) == [123]
+
+
+def test_get_bsp_from_market_definition(market_definition: Dict[str, Any]):
+    assert get_bsp_from_market_definition(market_definition) == {123: None, 456: None}
+
+    market_definition["runners"][0]["bsp"] = 1.5
+    market_definition["runners"][1]["bsp"] = 3.0
+
+    assert get_bsp_from_market_definition(market_definition) == {123: 1.5, 456: 3.0}
+
+
+def test_get_bsp_from_prices_file(path_to_prices_file: Path):
+    assert get_bsp_from_prices_file(path_to_prices_file) == {123: None, 456: None}
