@@ -1,5 +1,39 @@
 # Release History
 
+# 0.5.0 - 2023-01-13
+
+### Added
+
+* Functions for working with RaceResult objects:
+  * get_bsp_from_race_result
+  * get_winners_from_race_result
+* Functions for extracting BSP from different sources:
+  * get_bsp_from_market_definition
+  * get_bsp_from_prices_file
+* Functions for working with marketTime:
+  * get_market_time_as_datetime
+  * get_seconds_to_market_time
+* Functions for working with race files:
+  * create_combined_market_book_and_race_change_generator
+  * get_win_market_id_from_race_file
+* Functions for extracting information from the order book:
+  * calculate_order_book_imbalance
+  * get_price_size_by_depth
+  * get_second_best_price_size
+  * get_second_best_price
+* Functions for extracting market books and race changes at times of interest:
+  * get_market_books_from_prices_file
+  * get_minimum_book_percentage_market_books_from_prices_file
+  * get_race_change_from_race_file
+* Other Functions:
+  * get_publish_time_from_object 
+  * get_winners_from_market_definition
+
+### Changed
+
+* Improved patching of open
+* Arguments to prices_file_to_data_frame have changed to permit adding any desired marketDefinition field to the data frame
+
 # 0.4.0 - 2022-11-07
 
 ### Added
