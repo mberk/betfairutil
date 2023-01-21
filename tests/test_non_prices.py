@@ -24,6 +24,7 @@ from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
 from betfairutil import filter_runners
+from betfairutil import get_all_market_definitions_from_prices_file
 from betfairutil import get_best_price_with_rollup
 from betfairutil import get_bsp_from_market_definition
 from betfairutil import get_bsp_from_prices_file
@@ -1088,3 +1089,12 @@ def test_get_bsp_from_market_definition(market_definition: Dict[str, Any]):
 
 def test_get_bsp_from_prices_file(path_to_prices_file: Path):
     assert get_bsp_from_prices_file(path_to_prices_file) == {123: None, 456: None}
+
+
+def test_get_all_market_definitions_from_prices_file(
+    path_to_prices_file: Path, market_definition: Dict[str, Any]
+):
+    assert (
+        get_all_market_definitions_from_prices_file(path_to_prices_file)[0][1]
+        == market_definition
+    )
