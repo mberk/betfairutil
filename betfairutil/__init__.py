@@ -2750,7 +2750,28 @@ def create_combined_market_book_and_race_change_generator(
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
     **kwargs,
-):
+) -> Generator[Tuple[bool, Union[MarketBook, Dict[str, Any]]], None, None]:
+    """
+    Creates a generator for reading a Betfair prices file and a scraped race stream file simultaneously. The market book
+    and race change objects will be interleaved and returned from the generator in publish time order. The generator
+    will yield pairs of a boolean and an object where the boolean indicates whether the object is a market book (True)
+    or a race change (False)
+
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one
+        stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be
+        compressed or uncompressed
+    :param path_to_race_file: Where the scraped race stream file to be processed is located. This can be a local file,
+        one stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be
+        compressed or uncompressed
+    :param lightweight: Passed to the betfairlightweight StreamListener used to read the Betfair prices file. When True,
+        the market books will be dicts. When False, the market books will be betfairlightweight MarketBook objects
+    :param market_type_filter: Optionally filter out market books with a market type which does not exist in the given
+        sequence. Generally only makes sense when the Betfair prices file contains multiple market types, such as
+        the case of event-level official historic data files
+    :param kwargs: Other arguments passed to the betfairlightweight StreamListener
+    :return: A generator yielding pairs of a boolean and an object. The boolean indicates whether the object is a market
+        book (True) or a race change (False)
+    """
     market_book_generator = create_market_book_generator_from_prices_file(
         path_to_prices_file=path_to_prices_file,
         lightweight=lightweight,
@@ -2761,9 +2782,9 @@ def create_combined_market_book_and_race_change_generator(
         path_to_race_file
     )
     yield from heapq.merge(
-        market_book_generator,
-        race_change_generator,
-        key=lambda x: get_publish_time_from_object(x),
+        ((True, mb) for mb in market_book_generator),
+        ((False, rc) for rc in race_change_generator),
+        key=lambda x: get_publish_time_from_object(x[1]),
     )
 
 

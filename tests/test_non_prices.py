@@ -1052,7 +1052,7 @@ def test_get_win_market_id_from_race_file(
 def test_create_combined_market_book_and_race_change_generator(
     path_to_race_file: Path, path_to_prices_file: Path
 ):
-    objects = list(
+    pairs = list(
         create_combined_market_book_and_race_change_generator(
             path_to_prices_file=path_to_prices_file,
             path_to_race_file=path_to_race_file,
@@ -1060,8 +1060,14 @@ def test_create_combined_market_book_and_race_change_generator(
         )
     )
 
-    assert type(objects[0]) is MarketBook
-    assert type(objects[1]) is dict
+    _is_market_book, _object = pairs[0]
+    assert _is_market_book is True
+    assert type(_object) is MarketBook
+
+    _is_market_book, _object = pairs[1]
+    assert _is_market_book is False
+    assert type(_object) is dict
+    assert not is_market_book(_object)
 
 
 def test_get_bsp_from_race_result(
