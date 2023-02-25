@@ -1522,7 +1522,7 @@ def calculate_book_percentage(
     for runner in iterate_active_runners(market_book):
         best_price_size = get_best_price_size(runner, side)
         if best_price_size is not None:
-            if type(best_price_size) is PriceSize:
+            if isinstance(best_price_size, PriceSize):
                 best_price = best_price_size.price
             else:
                 best_price = best_price_size["price"]
@@ -1551,9 +1551,9 @@ def calculate_market_book_diff(
     :param previous_market_book: The previous market book to use in the comparison
     :return: The complete set of size differences stored in a MarketBookDiff
     """
-    if type(current_market_book) is MarketBook:
+    if isinstance(current_market_book, MarketBook):
         current_market_book = current_market_book._data
-    if type(previous_market_book) is MarketBook:
+    if isinstance(previous_market_book, MarketBook):
         previous_market_book = previous_market_book._data
 
     diff = {
@@ -1600,7 +1600,7 @@ def calculate_order_book_imbalance(
     if best_back_price_size is not None:
         best_lay_price_size = get_best_price_size(runner_book, Side.LAY)
         if best_lay_price_size is not None:
-            if type(best_back_price_size) is PriceSize:
+            if isinstance(best_back_price_size, PriceSize):
                 back_size = best_back_price_size.size
                 lay_size = best_lay_price_size.size
             else:
@@ -1635,7 +1635,7 @@ def calculate_total_matched(
     :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
     :return: The total matched on this market
     """
-    if type(market_book) is MarketBook:
+    if isinstance(market_book, MarketBook):
         market_book = market_book._data
 
     return sum(
@@ -1655,7 +1655,7 @@ def convert_yards_to_metres(yards: Optional[Union[int, float]]) -> Optional[floa
 def does_market_book_contain_runner_names(
     market_book: Union[Dict[str, Any], MarketBook]
 ) -> bool:
-    if type(market_book) is dict:
+    if isinstance(market_book, dict):
         market_definition = market_book["marketDefinition"]
     else:
         market_definition = market_book.market_definition
@@ -1668,7 +1668,7 @@ def does_market_book_contain_runner_names(
 def does_market_definition_contain_runner_names(
     market_definition: Union[Dict[str, Any], MarketDefinition]
 ) -> bool:
-    if type(market_definition) is dict:
+    if isinstance(market_definition, dict):
         runners = market_definition.get("runners", [])
     else:
         runners = market_definition.runners
@@ -1678,7 +1678,7 @@ def does_market_definition_contain_runner_names(
 
     runner = runners[0]
 
-    if type(runner) is dict:
+    if isinstance(runner, dict):
         name = runner.get("name")
     else:
         name = runner.name
@@ -1691,13 +1691,13 @@ def filter_runners(
     status: str,
     excluded_selection_ids: Sequence[int],
 ) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
-    if type(market_book) is dict:
+    if isinstance(market_book, dict):
         runners = market_book["runners"]
     else:
         runners = market_book.runners
 
     for runner in runners:
-        if type(runner) is dict:
+        if isinstance(runner, dict):
             runner_status = runner["status"]
             selection_id = runner["selectionId"]
         else:
@@ -1740,7 +1740,7 @@ def get_runner_book_from_market_book(
             f"return_type must be either dict or RunnerBook ({return_type} given)"
         )
 
-    if type(market_book) is MarketBook:
+    if isinstance(market_book, MarketBook):
         market_book = market_book._data
         return_type = return_type or RunnerBook
     else:
@@ -1765,7 +1765,7 @@ def get_runner_book_from_market_book(
 def get_best_price_size(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
-    if type(runner) is RunnerBook:
+    if isinstance(runner, RunnerBook):
         return next(iter(getattr(runner.ex, side.ex_attribute)), None)
     else:
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
@@ -1782,16 +1782,16 @@ def get_best_price(
     :return: The best price if one exists otherwise None
     """
     best_price_size = get_best_price_size(runner, side)
-    if type(best_price_size) is PriceSize:
+    if isinstance(best_price_size, PriceSize):
         return best_price_size.price
-    elif type(best_price_size) is dict:
+    elif isinstance(best_price_size, dict):
         return best_price_size["price"]
 
 
 def get_price_size_by_depth(
     runner: Union[Dict[str, Any], RunnerBook], side: Side, depth: int
 ) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
-    if type(runner) is RunnerBook:
+    if isinstance(runner, RunnerBook):
         available = getattr(runner.ex, side.ex_attribute)
     else:
         available = runner.get("ex", {}).get(side.ex_key, [])
@@ -1810,9 +1810,9 @@ def get_second_best_price(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
     second_best_price_size = get_second_best_price_size(runner, side)
-    if type(second_best_price_size) is PriceSize:
+    if isinstance(second_best_price_size, PriceSize):
         return second_best_price_size.price
-    elif type(second_best_price_size) is dict:
+    elif isinstance(second_best_price_size, dict):
         return second_best_price_size["price"]
 
 
@@ -1827,14 +1827,14 @@ def get_best_price_with_rollup(
     :param rollup: Any prices with volumes under this amount will be rolled up to lower levels in the order book
     :return: The best price if one exists otherwise None
     """
-    if type(runner) is RunnerBook:
+    if isinstance(runner, RunnerBook):
         _iter = iter(getattr(runner.ex, side.ex_attribute))
     else:
         _iter = iter(runner.get("ex", {}).get(side.ex_key, []))
 
     cumulative_size = 0
     for price_size in _iter:
-        if type(price_size) is dict:
+        if isinstance(price_size, dict):
             price = price_size["price"]
             size = price_size["size"]
         else:
@@ -1934,14 +1934,14 @@ def get_race_id_from_string(s: str) -> Optional[str]:
 def get_selection_id_to_runner_name_map_from_market_catalogue(
     market_catalogue: Union[Dict[str, Any], MarketCatalogue]
 ) -> Dict[int, str]:
-    if type(market_catalogue) is dict:
+    if isinstance(market_catalogue, dict):
         runners = market_catalogue["runners"]
     else:
         runners = market_catalogue.runners
 
     selection_id_to_runner_name_map = {}
     for runner in runners:
-        if type(runner) is dict:
+        if isinstance(runner, dict):
             selection_id_to_runner_name_map[runner["selectionId"]] = runner[
                 "runnerName"
             ]
@@ -2048,7 +2048,10 @@ def get_all_market_definitions_from_prices_file(
 def get_first_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
 ) -> Optional[Dict[str, Any]]:
-    _, market_definition = next(create_market_definition_generator_from_prices_file(path_to_prices_file), (None, None))
+    _, market_definition = next(
+        create_market_definition_generator_from_prices_file(path_to_prices_file),
+        (None, None),
+    )
     return market_definition
 
 
@@ -2082,7 +2085,7 @@ def get_bsp_from_race_result(
         result object
     :return: a dictionary mapping selection ID to Betfair starting price
     """
-    if type(race_result) is not dict:
+    if isinstance(race_result, (str, Path)):
         import orjson
         import smart_open
 
@@ -2111,7 +2114,7 @@ def get_winners_from_race_result(
         result object
     :return: a list of winning selection IDs
     """
-    if type(race_result) is not dict:
+    if isinstance(race_result, (str, Path)):
         import orjson
         import smart_open
 
@@ -2164,7 +2167,7 @@ def get_market_time_as_datetime(
         extract the market (start) time
     :return: The market (start) time as a TIMEZONE AWARE datetime object
     """
-    if type(market_book) is MarketBook:
+    if isinstance(market_book, MarketBook):
         market_time_datetime = market_book.market_definition.market_time.replace(
             tzinfo=datetime.timezone.utc
         )
@@ -2195,14 +2198,14 @@ def get_seconds_to_market_time(
     market_time = get_market_time_as_datetime(market_book)
 
     if current_time is None:
-        if type(market_book) is MarketBook:
+        if isinstance(market_book, MarketBook):
             current_time = market_book.publish_time.replace(
                 tzinfo=datetime.timezone.utc
             )
         else:
             current_time = market_book["publishTime"]
 
-    if type(current_time) is int:
+    if isinstance(current_time, int):
         current_time = publish_time_to_datetime(current_time)
 
     seconds_to_market_time = (market_time - current_time).total_seconds()
@@ -2236,7 +2239,7 @@ def is_market_book(x: Any) -> bool:
     :param x: The object to test
     :returns: True if x meets the above condition otherwise False
     """
-    if type(x) is MarketBook:
+    if isinstance(x, MarketBook):
         return True
     try:
         MarketBook(**x)
@@ -2252,7 +2255,7 @@ def is_runner_book(x: Any) -> bool:
     :param x: The object to test
     :returns: True if x meets the above condition otherwise False
     """
-    if type(x) is RunnerBook:
+    if isinstance(x, RunnerBook):
         return True
     try:
         RunnerBook(**x)
@@ -2373,7 +2376,7 @@ def market_book_to_data_frame(
 
     import pandas as pd
 
-    if type(market_book) is MarketBook:
+    if isinstance(market_book, MarketBook):
         market_book = market_book._data
 
     if _format == DataFrameFormatEnum.FULL_LADDER:
@@ -2916,7 +2919,7 @@ def remove_bet_from_runner_book(
     :raises: ValueError if size is greater than the size present in the order book
     """
     runner_book = deepcopy(runner_book)
-    if type(runner_book) is dict:
+    if isinstance(runner_book, dict):
         for price_size in runner_book["ex"][available_side.ex_key]:
             if price_size["price"] == price and price_size["size"] < size:
                 raise ValueError(
@@ -2959,7 +2962,7 @@ def random_from_market_id(market_id: Union[int, str]):
     :param market_id: A market ID, either in the standard string form provided by Betfair that starts "1." or an integer where the "1." prefix has been discarded
     :return: A quasi-random number generated from the market ID. See random_from_positive_int for details
     """
-    if type(market_id) is str:
+    if isinstance(market_id, str):
         market_id = int(market_id[2:])
 
     return random_from_positive_int(market_id)
@@ -2973,7 +2976,7 @@ def random_from_positive_int(i: int):
     :return: The n-th term of the low discrepancy sequence described here: http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
     :raises: ValueError if i is not a positive integer
     """
-    if type(i) is not int or i <= 0:
+    if not isinstance(i, int) or i <= 0:
         raise ValueError(f"{i} is not a positive integer")
 
     return (0.5 + _INVERSE_GOLDEN_RATIO * i) % 1
