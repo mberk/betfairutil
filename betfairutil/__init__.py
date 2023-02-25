@@ -2020,13 +2020,12 @@ def get_final_market_definition_from_prices_file(
     return market_definition
 
 
-def get_all_market_definitions_from_prices_file(
+def create_market_definition_generator_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> List[Tuple[int, Dict[str, Any]]]:
+) -> Generator[Tuple[int, Dict[str, Any]], None, None]:
     import orjson
     import smart_open
 
-    market_definitions = []
     with smart_open.open(path_to_prices_file, "rb") as f:
         for line in f:
             if b"marketDefinition" in line:
@@ -2035,9 +2034,22 @@ def get_all_market_definitions_from_prices_file(
                 for mc in message["mc"]:
                     market_definition = mc.get("marketDefinition")
                     if market_definition is not None:
-                        market_definitions.append((publish_time, market_definition))
+                        yield publish_time, market_definition
 
-    return market_definitions
+
+def get_all_market_definitions_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> List[Tuple[int, Dict[str, Any]]]:
+    return list(
+        create_market_definition_generator_from_prices_file(path_to_prices_file)
+    )
+
+
+def get_first_market_definition_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Optional[Dict[str, Any]]:
+    _, market_definition = next(create_market_definition_generator_from_prices_file(path_to_prices_file), (None, None))
+    return market_definition
 
 
 def get_pre_event_volume_traded_from_prices_file(
