@@ -30,6 +30,7 @@ from betfairutil import get_bsp_from_market_definition
 from betfairutil import get_bsp_from_prices_file
 from betfairutil import get_bsp_from_race_result
 from betfairutil import get_final_market_definition_from_prices_file
+from betfairutil import get_first_market_definition_from_prices_file
 from betfairutil import get_event_id_from_string
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
@@ -47,6 +48,7 @@ from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_win_market_id_from_race_card
 from betfairutil import get_win_market_id_from_race_file
 from betfairutil import get_winners_from_market_definition
+from betfairutil import get_winners_from_prices_file
 from betfairutil import get_winners_from_race_result
 from betfairutil import is_market_book
 from betfairutil import is_runner_book
@@ -1104,3 +1106,16 @@ def test_get_all_market_definitions_from_prices_file(
         get_all_market_definitions_from_prices_file(path_to_prices_file)[0][1]
         == market_definition
     )
+
+
+def test_get_first_market_definition_from_prices_file(
+    path_to_prices_file: Path, market_definition: Dict[str, Any]
+):
+    assert (
+        get_first_market_definition_from_prices_file(path_to_prices_file)
+        == market_definition
+    )
+
+
+def test_get_winners_from_prices_file(path_to_prices_file: Path):
+    assert get_winners_from_prices_file(path_to_prices_file) == []
