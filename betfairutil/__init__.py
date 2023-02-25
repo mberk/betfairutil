@@ -5,6 +5,7 @@ import itertools
 import re
 from bisect import bisect_left
 from bisect import bisect_right
+from collections import deque
 from copy import deepcopy
 from math import asin
 from math import cos
@@ -2163,6 +2164,25 @@ def get_inplay_publish_time_from_prices_file(
             if as_datetime:
                 publish_time = publish_time_to_datetime(publish_time)
             return publish_time
+
+
+def get_total_volume_traded_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Optional[Union[int, float]]:
+    g = create_market_book_generator_from_prices_file(path_to_prices_file)
+    market_books = deque(g, 8)
+    for market_book in reversed(market_books):
+        volume_traded = calculate_total_matched(market_book)
+        if volume_traded > 0:
+            return volume_traded
+        if all(
+            runner["status"] == "REMOVED"
+            for runner in market_book["marketDefinition"]["runners"]
+        ):
+            return None
+
+    if len(market_books) > 0:
+        return 0
 
 
 def _is_exchange_win_market(d: Dict[str, Any]) -> bool:
