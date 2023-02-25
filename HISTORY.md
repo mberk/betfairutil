@@ -1,5 +1,22 @@
 # Release History
 
+# 0.5.1 - 2023-02-25
+
+### Added
+
+* Functions for working with MarketDefinition objects:
+  * create_market_definition_generator_from_prices_file
+  * get_all_market_definitions_from_prices_file
+  * get_winners_from_prices_file
+
+### Changed
+
+* Use isinstance() wherever type() was being used
+* Improved create_combined_market_book_and_race_change_generator
+  * Added type hint
+  * Added docstring
+  * Now generates pairs indicating which stream each object came from
+
 # 0.5.0 - 2023-01-13
 
 ### Added
