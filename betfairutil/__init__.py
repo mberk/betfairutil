@@ -1992,6 +1992,13 @@ def get_winners_from_market_definition(market_definition: Dict[str, Any]) -> Lis
     return selection_ids
 
 
+def get_winners_from_prices_file(path_to_prices_file: Union[str, Path]) -> List[int]:
+    market_definition = get_final_market_definition_from_prices_file(
+        path_to_prices_file
+    )
+    return get_winners_from_market_definition(market_definition)
+
+
 def get_final_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
 ) -> Optional[Dict[str, Any]]:
