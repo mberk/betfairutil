@@ -1124,7 +1124,11 @@ def test_get_winners_from_prices_file(path_to_prices_file: Path):
 def test_calculate_available_volume(market_book: Dict[str, Any]):
     assert calculate_available_volume(market_book, Side.BACK, 1.05) == 2
 
-    market_book["runners"][0]["ex"]["availableToBack"].append({"price": 1.96, "size": 1})
-    market_book["runners"][1]["ex"]["availableToBack"].append({"price": 1.96, "size": 1})
+    market_book["runners"][0]["ex"]["availableToBack"].append(
+        {"price": 1.96, "size": 1}
+    )
+    market_book["runners"][1]["ex"]["availableToBack"].append(
+        {"price": 1.96, "size": 1}
+    )
     assert calculate_available_volume(market_book, Side.BACK, 1.05) == 4
     assert calculate_available_volume(market_book, Side.BACK, 1.02) == 2

@@ -1541,16 +1541,28 @@ def calculate_book_percentage(
 
 
 def calculate_available_volume(
-        market_book: Union[Dict[str, Any], MarketBook], side: Side, max_book_percentage: float
+    market_book: Union[Dict[str, Any], MarketBook],
+    side: Side,
+    max_book_percentage: float,
 ) -> float:
+    """
+    Calculate the available volume up to a maximum book_percentage value.
+
+    :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :param side: Indicate whether to get the available volume on the back or lay side.
+    :param max_book_percentage: Maximum book_percentage value to use for calculating the volume.
+    :return: Available total volume.
+    """
     available_volume = 0
     for depth in range(10):
         book_percentage, size = 0, 0
-        for runner in market_book['runners']:
-            runner_price_size = get_price_size_by_depth(runner=runner, side=side, depth=depth)
+        for runner in market_book["runners"]:
+            runner_price_size = get_price_size_by_depth(
+                runner=runner, side=side, depth=depth
+            )
             if runner_price_size:
-                book_percentage += 1.0 / runner_price_size['price']
-                size += runner_price_size['size']
+                book_percentage += 1.0 / runner_price_size["price"]
+                size += runner_price_size["size"]
             else:
                 return available_volume
 
