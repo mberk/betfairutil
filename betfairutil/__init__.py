@@ -1567,7 +1567,7 @@ def calculate_available_volume(
             else:
                 return available_volume
 
-        if book_percentage < max_book_percentage:
+        if book_percentage <= max_book_percentage:
             available_volume += size
 
 
