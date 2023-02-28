@@ -1554,8 +1554,9 @@ def calculate_available_volume(
     :return: Available total volume.
     """
     available_volume = 0
-    for depth in range(10):
-        book_percentage, size = 0, 0
+    for depth in itertools.count():
+        book_percentage = 0
+        size = 0
         for runner in market_book["runners"]:
             runner_price_size = get_price_size_by_depth(
                 runner=runner, side=side, depth=depth
@@ -1568,8 +1569,6 @@ def calculate_available_volume(
 
         if book_percentage < max_book_percentage:
             available_volume += size
-
-    return available_volume
 
 
 def calculate_market_book_diff(

@@ -13,7 +13,8 @@ from betfairlightweight.resources import MarketDefinition
 from betfairlightweight.resources import RunnerBook
 from pyrsistent import pmap
 
-from betfairutil import calculate_book_percentage, calculate_available_volume
+from betfairutil import calculate_book_percentage
+from betfairutil import calculate_available_volume
 from betfairutil import calculate_market_book_diff
 from betfairutil import calculate_order_book_imbalance
 from betfairutil import calculate_total_matched
