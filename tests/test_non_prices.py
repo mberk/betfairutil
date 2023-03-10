@@ -228,6 +228,15 @@ def path_to_race_result_file(race_result: Dict[str, Any], tmp_path: Path):
 
 
 @pytest.fixture
+def path_to_race_card_file(race_card: Dict[str, Any], tmp_path: Path):
+    path_to_race_card_file = tmp_path / "race-card.gz"
+    with smart_open.open(path_to_race_card_file, "w") as f:
+        f.write(json.dumps(race_card))
+
+    return path_to_race_card_file
+
+
+@pytest.fixture
 def path_to_race_file(race_change: Dict[str, Any], tmp_path: Path):
     path_to_race_file = tmp_path / f"31945198.2354.jsonl.gz"
     with smart_open.open(path_to_race_file, "w") as f:
@@ -513,13 +522,23 @@ def test_convert_yards_to_metres():
     assert convert_yards_to_metres(None) is None
 
 
-def test_get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]):
+def test_get_race_distance_in_metres_from_race_card(
+    race_card: Dict[str, Any], path_to_race_card_file: Path
+):
     assert get_race_distance_in_metres_from_race_card(race_card) == 914.4
+    assert get_race_distance_in_metres_from_race_card(path_to_race_card_file) == 914.4
 
 
-def test_get_win_market_id_from_race_card(race_card: Dict[str, Any]):
+def test_get_win_market_id_from_race_card(
+    race_card: Dict[str, Any], path_to_race_card_file: Path
+):
     assert get_win_market_id_from_race_card(race_card) == "1.456"
     assert get_win_market_id_from_race_card(race_card, as_integer=True) == 456
+
+    assert get_win_market_id_from_race_card(path_to_race_card_file) == "1.456"
+    assert (
+        get_win_market_id_from_race_card(path_to_race_card_file, as_integer=True) == 456
+    )
 
 
 def test_is_market_book(
