@@ -1460,6 +1460,25 @@ class _OpenMocker:
             return _ORIGINAL_OPEN(file, *args, **kwargs)
 
 
+def _load_json_object(o: Union[Dict[str, Any], str, Path]) -> Dict[str, Any]:
+    """
+    Takes either a JSON object and simply returns it or a path to a JSON file containing a JSON
+    object in which case read that file and return the JSON object it contains
+
+    :param o: Either a JSON object or a path to a JSON file containing a JSON object
+    :return: If o is a JSON object then that object; otherwise the JSON object that the file
+        o refers to contains
+    """
+    if isinstance(o, (str, Path)):
+        import orjson
+        import smart_open
+
+        with smart_open.open(o, "r") as f:
+            o = orjson.loads(f.read())
+
+    return o
+
+
 class DataFrameFormatEnum(enum.Enum):
     FULL_LADDER = "FULL_LADDER"
     LAST_PRICE_TRADED = "LAST_PRICE_TRADED"
@@ -2085,12 +2104,7 @@ def get_bsp_from_race_result(
         result object
     :return: a dictionary mapping selection ID to Betfair starting price
     """
-    if isinstance(race_result, (str, Path)):
-        import orjson
-        import smart_open
-
-        with smart_open.open(race_result, "r") as f:
-            race_result = orjson.loads(f.read())
+    race_result = _load_json_object(race_result)
 
     bsp = {}
     for runner in race_result["runners"]:
@@ -2133,15 +2147,39 @@ def get_winners_from_race_result(
     return winning_selection_ids
 
 
-def get_race_distance_in_metres_from_race_card(race_card: Dict[str, Any]) -> float:
+def get_race_distance_in_metres_from_race_card(
+    race_card: Union[Dict[str, Any], str, Path]
+) -> float:
+    """
+    Extract the race distance from a race card object in yards then convert it to metres
+
+    :param race_card: Either the race card object as a dictionary or the path to a JSON file
+        containing the race card object
+    :return: the race distance in metres
+    """
+    race_card = _load_json_object(race_card)
     distance_in_yards = race_card["race"]["distance"]
     distance_in_metres = convert_yards_to_metres(distance_in_yards)
     return distance_in_metres
 
 
 def get_win_market_id_from_race_card(
-    race_card: Dict[str, Any], as_integer: bool = False
+    race_card: Union[Dict[str, Any], str, Path], as_integer: bool = False
 ) -> Optional[Union[int, str]]:
+    """
+    Search the markets contained in a race card for the one corresponding to the Exchange WIN
+    market and return its market ID
+
+    :param race_card: Either the race card object as a dictionary or the path to a JSON file
+        containing the race card object
+    :param as_integer: Should the market ID be returned as is - in the standard string form
+        provided by Betfair that starts "1." - or an integer where the "1." prefix has been
+        discarded
+    :return: The market ID corresponding to the Exchange WIN market, as either an integer or
+        a string according to as_integer, if such a market can be found in the race card
+        otherwise None
+    """
+    race_card = _load_json_object(race_card)
     for market in race_card["race"]["markets"]:
         market_id = market["marketId"]
         if market["marketType"] == "WIN" and market_id.startswith("1."):
