@@ -30,9 +30,10 @@ from betfairutil import get_best_price_with_rollup
 from betfairutil import get_bsp_from_market_definition
 from betfairutil import get_bsp_from_prices_file
 from betfairutil import get_bsp_from_race_result
+from betfairutil import get_event_id_from_string
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_first_market_definition_from_prices_file
-from betfairutil import get_event_id_from_string
+from betfairutil import get_inplay_publish_time_from_prices_file
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_market_time_as_datetime
@@ -56,6 +57,7 @@ from betfairutil import is_runner_book
 from betfairutil import iterate_other_active_runners
 from betfairutil import market_book_to_data_frame
 from betfairutil import prices_file_to_csv_file
+from betfairutil import publish_time_to_datetime
 from betfairutil import random_from_market_id
 from betfairutil import read_prices_file
 from betfairutil import read_race_file
@@ -277,6 +279,55 @@ def path_to_prices_file(
                                 {"id": 123, "atb": [[1.98, 1]]},
                                 {"id": 456, "atb": [[1.98, 1]]},
                             ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+    return path_to_prices_file
+
+
+@pytest.fixture
+def path_to_prices_file_with_inplay_transition(
+    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+):
+    path_to_prices_file = tmp_path / f"1.123.json.gz"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        market_definition["inPlay"] = False
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "trd": [[1.98, 1]]},
+                                {"id": 456, "trd": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+        market_definition["inPlay"] = True
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [],
                         }
                     ],
                 }
@@ -761,52 +812,11 @@ def test_get_final_market_definition_from_prices_file(
 
 
 def test_get_pre_event_volume_traded_from_prices_file(
-    market_definition: Dict[str, Any],
-    market_book: Dict[str, Any],
-    tmp_path: Path,
+    path_to_prices_file_with_inplay_transition: Path,
 ):
-    path_to_prices_file = tmp_path / f"1.123.json.gz"
-    with smart_open.open(path_to_prices_file, "w") as f:
-        market_definition["inPlay"] = False
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [
-                                {"id": 123, "trd": [[1.98, 1]]},
-                                {"id": 456, "trd": [[1.98, 1]]},
-                            ],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
-        market_definition["inPlay"] = True
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
-    volume_traded = get_pre_event_volume_traded_from_prices_file(path_to_prices_file)
+    volume_traded = get_pre_event_volume_traded_from_prices_file(
+        path_to_prices_file_with_inplay_transition
+    )
     assert volume_traded == 2
 
 
@@ -1152,3 +1162,29 @@ def test_calculate_available_volume(market_book: Dict[str, Any]):
     )
     assert calculate_available_volume(market_book, Side.BACK, 1.05) == 4
     assert calculate_available_volume(market_book, Side.BACK, 1.02) == 2
+
+
+def test_get_inplay_publish_time_from_prices_file(
+    market_book: MarketBook,
+    path_to_prices_file_with_inplay_transition: Path,
+):
+    assert (
+        get_inplay_publish_time_from_prices_file(
+            path_to_prices_file_with_inplay_transition
+        )
+        == market_book["publishTime"]
+    )
+    assert get_inplay_publish_time_from_prices_file(
+        path_to_prices_file_with_inplay_transition, as_datetime=True
+    ) == publish_time_to_datetime(market_book["publishTime"])
+
+    # Empty file
+    with smart_open.open(path_to_prices_file_with_inplay_transition, "w"):
+        pass
+
+    assert (
+        get_inplay_publish_time_from_prices_file(
+            path_to_prices_file_with_inplay_transition
+        )
+        is None
+    )
