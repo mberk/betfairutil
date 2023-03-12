@@ -2119,6 +2119,18 @@ def get_pre_event_volume_traded_from_prices_file(
         return pre_event_volume_traded
 
 
+def get_inplay_publish_time_from_prices_file(
+    path_to_prices_file: Union[str, Path], as_datetime: bool = False
+) -> Optional[Union[int, datetime.datetime]]:
+    g = create_market_book_generator_from_prices_file(path_to_prices_file)
+    for market_book in g:
+        if market_book["inplay"]:
+            publish_time = market_book["publishTime"]
+            if as_datetime:
+                publish_time = publish_time_to_datetime(publish_time)
+            return publish_time
+
+
 def _is_exchange_win_market(d: Dict[str, Any]) -> bool:
     return d["marketType"] == "WIN" and d["marketId"].startswith("1.")
 
