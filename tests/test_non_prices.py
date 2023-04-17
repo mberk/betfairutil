@@ -15,6 +15,7 @@ from pyrsistent import pmap
 
 from betfairutil import calculate_available_volume
 from betfairutil import calculate_book_percentage
+from betfairutil import calculate_haversine_distance_between_runners
 from betfairutil import calculate_market_book_diff
 from betfairutil import calculate_order_book_imbalance
 from betfairutil import calculate_total_matched
@@ -77,9 +78,7 @@ def race_card():
                 {"marketId": "1.456", "marketType": "WIN", "numberOfWinners": 1},
             ],
             "distance": 1000,
-            "raceType": {
-                "full": "Chase"
-            }
+            "raceType": {"full": "Chase"},
         }
     }
 
@@ -221,6 +220,14 @@ def race_change():
             "ord": [],
             "J": [],
         },
+        "rrc": [
+            {
+                "ft": 1670024522300,
+                "id": 50749188,
+                "long": -76.6608639,
+                "lat": 40.3955184,
+            }
+        ],
     }
 
 
@@ -758,7 +765,6 @@ def test_read_race_file(race_change: Dict[str, Any], path_to_race_file: Path):
     assert len(rcs) == 1
 
     del rcs[0]["pt"]
-    del rcs[0]["rrc"]
     del rcs[0]["streaming_snap"]
     del rcs[0]["streaming_unique_id"]
     del rcs[0]["streaming_update"]
@@ -1197,3 +1203,11 @@ def test_get_inplay_publish_time_from_prices_file(
 def test_get_is_jump_from_race_card(race_card: Dict[str, Any]):
     is_jump = get_is_jump_from_race_card(race_card)
     assert is_jump
+
+
+def test_calculate_haversine_distance_between_runners(race_change: Dict[str, Any]):
+    haversine_distance = calculate_haversine_distance_between_runners(
+        race_change["rrc"][0], race_change["rrc"][0]
+    )
+
+    assert haversine_distance == 0
