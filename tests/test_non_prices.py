@@ -34,6 +34,7 @@ from betfairutil import get_event_id_from_string
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_first_market_definition_from_prices_file
 from betfairutil import get_inplay_publish_time_from_prices_file
+from betfairutil import get_is_jump_from_race_card
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_market_time_as_datetime
@@ -76,6 +77,9 @@ def race_card():
                 {"marketId": "1.456", "marketType": "WIN", "numberOfWinners": 1},
             ],
             "distance": 1000,
+            "raceType": {
+                "full": "Chase"
+            }
         }
     }
 
@@ -1188,3 +1192,8 @@ def test_get_inplay_publish_time_from_prices_file(
         )
         is None
     )
+
+
+def test_get_is_jump_from_race_card(race_card: Dict[str, Any]):
+    is_jump = get_is_jump_from_race_card(race_card)
+    assert is_jump
