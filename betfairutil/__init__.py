@@ -2208,6 +2208,12 @@ def get_race_distance_in_metres_from_race_card(
     return distance_in_metres
 
 
+def get_is_jump_from_race_card(race_card: Union[Dict[str, Any], str, Path]) -> bool:
+    race_card = _load_json_object(race_card)
+    race_type = race_card["race"]["raceType"]["full"]
+    return race_type in ("Chase", "Hurdle")
+
+
 def get_win_market_id_from_race_card(
     race_card: Union[Dict[str, Any], str, Path], as_integer: bool = False
 ) -> Optional[Union[int, str]]:
