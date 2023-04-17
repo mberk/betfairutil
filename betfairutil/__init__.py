@@ -3133,7 +3133,9 @@ def get_race_leaders(rc: Dict[str, Any]) -> Set[int]:
     if len(distances_remaining) > 0:
         leader_distance_remaining = distances_remaining[0]
         return {
-            rrc["id"] for rrc in (rc.get("rrc") or []) if rrc["prg"] == leader_distance_remaining
+            rrc["id"]
+            for rrc in (rc.get("rrc") or [])
+            if rrc["prg"] == leader_distance_remaining
         }
     else:
         return set()
