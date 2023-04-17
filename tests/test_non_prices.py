@@ -40,6 +40,7 @@ from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_market_time_as_datetime
 from betfairutil import get_minimum_book_percentage_market_books_from_prices_file
+from betfairutil import get_number_of_jumps_remaining
 from betfairutil import get_pre_event_volume_traded_from_prices_file
 from betfairutil import get_race_change_from_race_file
 from betfairutil import get_race_id_from_string
@@ -1222,3 +1223,12 @@ def test_get_race_leaders(race_change: Dict[str, Any]):
     race_change["rrc"] = None
     race_leaders = get_race_leaders(race_change)
     assert race_leaders == set()
+
+
+def test_get_number_of_jumps_remaining(race_change: Dict[str, Any]):
+    number_of_jumps_remaining = get_number_of_jumps_remaining(race_change)
+    assert number_of_jumps_remaining is None
+
+    race_change["rpc"]["J"] = [{"L": 1000}]
+    number_of_jumps_remaining = get_number_of_jumps_remaining(race_change)
+    assert number_of_jumps_remaining == 1
