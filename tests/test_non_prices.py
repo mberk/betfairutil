@@ -43,6 +43,7 @@ from betfairutil import get_minimum_book_percentage_market_books_from_prices_fil
 from betfairutil import get_pre_event_volume_traded_from_prices_file
 from betfairutil import get_race_change_from_race_file
 from betfairutil import get_race_id_from_string
+from betfairutil import get_race_leaders
 from betfairutil import get_runner_book_from_market_book
 from betfairutil import get_second_best_price
 from betfairutil import get_second_best_price_size
@@ -226,6 +227,7 @@ def race_change():
                 "id": 50749188,
                 "long": -76.6608639,
                 "lat": 40.3955184,
+                "prg": 1106.4,
             }
         ],
     }
@@ -1211,3 +1213,12 @@ def test_calculate_haversine_distance_between_runners(race_change: Dict[str, Any
     )
 
     assert haversine_distance == 0
+
+
+def test_get_race_leaders(race_change: Dict[str, Any]):
+    race_leaders = get_race_leaders(race_change)
+    assert race_leaders == {race_change["rrc"][0]["id"]}
+
+    race_change["rrc"] = None
+    race_leaders = get_race_leaders(race_change)
+    assert race_leaders == set()
