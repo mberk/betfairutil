@@ -2061,13 +2061,15 @@ def get_final_market_definition_from_prices_file(
     import orjson
     import smart_open
 
-    market_definition = None
+    the_line = None
     with smart_open.open(path_to_prices_file, "rb") as f:
         for line in f:
             if b"marketDefinition" in line:
-                market_definition = orjson.loads(line)["mc"][0]["marketDefinition"]
+                the_line = line
 
-    return market_definition
+    if the_line is not None:
+        market_definition = orjson.loads(the_line)["mc"][0]["marketDefinition"]
+        return market_definition
 
 
 def create_market_definition_generator_from_prices_file(
