@@ -6,6 +6,10 @@ import re
 from bisect import bisect_left
 from bisect import bisect_right
 from copy import deepcopy
+from math import asin
+from math import cos
+from math import radians
+from math import sin
 from math import sqrt
 from pathlib import Path
 from typing import (
@@ -16,6 +20,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     Tuple,
     TYPE_CHECKING,
     Union,
@@ -1445,6 +1450,7 @@ NUMBER_OF_METRES_IN_A_YARD = 0.9144
 RACE_ID_PATTERN = re.compile(r"\d{8}\.\d{4}")
 _INVERSE_GOLDEN_RATIO = 2.0 / (1 + sqrt(5.0))
 _ORIGINAL_OPEN = open
+_AVERAGE_EARTH_RADIUS_IN_METERS = 6371008.8
 
 
 class _OpenMocker:
@@ -3072,3 +3078,62 @@ def random_from_positive_int(i: int):
 
 
 random_from_event_id = random_from_positive_int
+
+
+def calculate_haversine_distance_between_runners(
+    rrc_a: Dict[str, Any], rrc_b: Dict[str, Any]
+) -> float:
+    """
+    Given two rrc objects from the Betfair race stream, calculate the approximate distance
+    between the horses in metres using the haversine formula
+
+    :param rrc_a: A rrc object from the Betfair race stream as a dictionary
+    :param rrc_b: Another rrc object from the Betfair race stream as a dictionary
+    :return: The approximate distance between the two horses in metres
+    """
+    delta_longitude = radians(rrc_a["long"]) - radians(rrc_b["long"])
+    delta_latitude = radians(rrc_a["lat"]) - radians(rrc_b["lat"])
+    d = (
+        sin(delta_latitude * 0.5) ** 2
+        + cos(radians(rrc_a["lat"]))
+        * cos(radians(rrc_b["lat"]))
+        * sin(delta_longitude * 0.5) ** 2
+    )
+
+    return 2 * _AVERAGE_EARTH_RADIUS_IN_METERS * asin(sqrt(d))
+
+
+def get_number_of_jumps_remaining(rc: Dict[str, Any]) -> Optional[int]:
+    """
+    Given a race change object, work out how many jumps there are between the _leader_ and the
+    finishing line. If there are no jump locations present in the race change object, either
+    because this is a flat race or because it comes from older data that lacks the jump
+    locations, then None will be returned
+
+    :param rc: A Betfair race change object as a Python dictionary
+    :return: The number of jumps between the leader and the finishing line unless there are no
+        jump locations present in the race change object in which case None
+    """
+    distance_remaining = (rc.get("rpc") or {}).get("prg")
+    jumps = (rc.get("rpc") or {}).get("J") or []
+    if distance_remaining is not None and len(jumps) > 0:
+        return sum(j["L"] < distance_remaining for j in jumps)
+
+
+def get_race_leaders(rc: Dict[str, Any]) -> Set[int]:
+    """
+    Given a race change object, return the set of selection IDs of horses which are closest to
+    the finishing line
+
+    :param rc: A Betfair race change object as a Python dictionary
+    :return: A set containing the selection IDs corresponding to the horses which are in the
+        lead. The size of the set may exceed 1 if multiple horses are tied for the lead
+    """
+    distances_remaining = sorted(rrc["prg"] for rrc in (rc.get("rrc") or []))
+    if len(distances_remaining) > 0:
+        leader_distance_remaining = distances_remaining[0]
+        return {
+            rrc["id"] for rrc in (rc.get("rrc") or []) if rrc["prg"] == leader_distance_remaining
+        }
+    else:
+        return set()
