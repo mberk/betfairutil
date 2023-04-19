@@ -1827,6 +1827,15 @@ def get_best_price_size(
         return next(iter(runner.get("ex", {}).get(side.ex_key, [])), None)
 
 
+def get_mid_price(
+    runner: Union[Dict[str, Any], RunnerBook]
+) -> Optional[Union[int, float]]:
+    best_back = get_best_price(runner, Side.BACK)
+    best_lay = get_best_price(runner, Side.LAY)
+    if best_back is not None and best_lay is not None:
+        return (best_back + best_lay) / 2
+
+
 def get_best_price(
     runner: Union[Dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:

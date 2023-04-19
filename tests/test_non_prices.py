@@ -39,6 +39,7 @@ from betfairutil import get_is_jump_from_race_card
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
 from betfairutil import get_market_time_as_datetime
+from betfairutil import get_mid_price
 from betfairutil import get_minimum_book_percentage_market_books_from_prices_file
 from betfairutil import get_number_of_jumps_remaining
 from betfairutil import get_pre_event_volume_traded_from_prices_file
@@ -1232,3 +1233,11 @@ def test_get_number_of_jumps_remaining(race_change: Dict[str, Any]):
     race_change["rpc"]["J"] = [{"L": 1000}]
     number_of_jumps_remaining = get_number_of_jumps_remaining(race_change)
     assert number_of_jumps_remaining == 1
+
+
+def test_get_mid_price(market_book: Dict[str, Any]):
+    runner_book = get_runner_book_from_market_book(market_book, selection_id=123)
+    assert get_mid_price(runner_book) is None
+
+    runner_book["ex"]["availableToLay"].append({"price": 1.99, "size": 1})
+    assert get_mid_price(runner_book) == pytest.approx(1.985)
