@@ -2113,15 +2113,23 @@ def get_first_market_definition_from_prices_file(
     return market_definition
 
 
-def get_pre_event_volume_traded_from_prices_file(
-    path_to_prices_file: Union[str, Path],
-) -> Optional[Union[int, float]]:
+def get_last_pre_event_market_book_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Optional[Dict[str, Any]]:
     g = create_market_book_generator_from_prices_file(path_to_prices_file)
     pre_event_market_book = None
     for market_book in g:
         if market_book["inplay"]:
-            break
+            return pre_event_market_book
         pre_event_market_book = market_book
+
+
+def get_pre_event_volume_traded_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+) -> Optional[Union[int, float]]:
+    pre_event_market_book = get_last_pre_event_market_book_from_prices_file(
+        path_to_prices_file
+    )
     if pre_event_market_book is not None:
         pre_event_volume_traded = calculate_total_matched(pre_event_market_book)
         return pre_event_volume_traded
