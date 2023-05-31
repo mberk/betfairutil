@@ -2167,10 +2167,45 @@ def get_inplay_publish_time_from_prices_file(
 
 
 def get_total_volume_traded_from_prices_file(
-    path_to_prices_file: Union[str, Path]
+    path_to_prices_file: Union[str, Path], deque_len: Optional[int] = 8
 ) -> Optional[Union[int, float]]:
+    """
+    Working out the total volume traded on a market is surprisingly tricky given Betfair's shenanigans around the market
+    closure. Specifically, the last few updates in the price stream result in data getting zeroed out which means if you
+    were to just look at the last available market book it would look like the total volume traded was zero. In fact, it
+    appears there is no consistency as to how many price stream updates are involved in this zeroing of data and so it's
+    not as simple as having a rule such as "look at the second to last market book available".
+
+    If memory usage is not an issue then the most robust method would be to read the entire set of market books into
+    memory then iterate them in reverse order looking for the first market book that has a non-zero total volume traded.
+    However, in many use cases memory usage is a significant concern. For example, if you want to process tens of
+    thousands of markets and use parallel processing to speed this up then you end up needing to hold the entire set of
+    market books for multiple markets in memory simultaneously and, depending on the number of cores your machine has
+    and the number of parallel processes you use, it is easy to exhaust the total memory available.
+
+    The solution presented here is to use a deque
+    (https://docs.python.org/3/library/collections.html#collections.deque). Think of this as a limited length list
+    where when a new item is appended to the list, another item is removed for the start of the list. This is used when
+    reading the prices file to leave us with the X last market books which can then be iterated in reverse order to find
+    the last one which has a non-zero volume traded. Based on my own analysis of prices files I have settled on a
+    default maximum length of the deque of 8 - i.e. at most this function will store 8 market books in memory at any one
+    time. This is a trade-off between giving correct results and drastically cutting down on memory usage versus reading
+    the entire set of market books into memory. If memory usage is not of concern to you then you can simply set the
+    deque_len argument to None and the function will read the entire set of market books into memory ensuring
+    correctness. If you observe any prices files where a deque of length 8 doesn't give correct results then please
+    create a GitHub issue here: https://github.com/mberk/betfairutil/issues so I can investigate.
+
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one
+        stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be
+        compressed or uncompressed
+    :param deque_len: The length of the deque used to limit memory usage when working out the total volume traded. See
+        discussion above. This can be set to None to use the entire set of market books which should ensure correctness
+        but dramatically increase memory usage
+    :return: The calculated total volume traded if it is available or None if the market was pulled by Betfair (i.e. all
+        runners have a status of "REMOVED")
+    """
     g = create_market_book_generator_from_prices_file(path_to_prices_file)
-    market_books = deque(g, 8)
+    market_books = deque(g, deque_len)
     for market_book in reversed(market_books):
         volume_traded = calculate_total_matched(market_book)
         if volume_traded > 0:

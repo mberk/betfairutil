@@ -44,6 +44,7 @@ from betfairutil import get_minimum_book_percentage_market_books_from_prices_fil
 from betfairutil import get_number_of_jumps_remaining
 from betfairutil import get_pre_event_volume_traded_from_prices_file
 from betfairutil import get_race_change_from_race_file
+from betfairutil import get_race_distance_in_metres_from_race_card
 from betfairutil import get_race_id_from_string
 from betfairutil import get_race_leaders
 from betfairutil import get_runner_book_from_market_book
@@ -51,7 +52,7 @@ from betfairutil import get_second_best_price
 from betfairutil import get_second_best_price_size
 from betfairutil import get_seconds_to_market_time
 from betfairutil import get_selection_id_to_runner_name_map_from_market_catalogue
-from betfairutil import get_race_distance_in_metres_from_race_card
+from betfairutil import get_total_volume_traded_from_prices_file
 from betfairutil import get_win_market_id_from_race_card
 from betfairutil import get_win_market_id_from_race_file
 from betfairutil import get_winners_from_market_definition
@@ -1241,3 +1242,62 @@ def test_get_mid_price(market_book: Dict[str, Any]):
 
     runner_book["ex"]["availableToLay"].append({"price": 1.99, "size": 1})
     assert get_mid_price(runner_book) == pytest.approx(1.985)
+
+
+def test_get_total_volume_traded_from_prices_file(
+    path_to_prices_file: Path,
+    market_book: Dict[str, Any],
+    market_definition: Dict[str, Any],
+):
+    total_volume_traded = get_total_volume_traded_from_prices_file(path_to_prices_file)
+    assert total_volume_traded == 0
+
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]], "trd": [[1.99, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+    total_volume_traded = get_total_volume_traded_from_prices_file(path_to_prices_file)
+    assert total_volume_traded == 1
+
+    for runner in market_definition["runners"]:
+        runner["status"] = "REMOVED"
+    with smart_open.open(path_to_prices_file, "w") as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": market_book["publishTime"],
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": [
+                                {"id": 123, "atb": [[1.98, 1]]},
+                                {"id": 456, "atb": [[1.98, 1]]},
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+    total_volume_traded = get_total_volume_traded_from_prices_file(path_to_prices_file)
+    assert total_volume_traded is None
