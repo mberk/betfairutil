@@ -1,5 +1,24 @@
 # Release History
 
+# 0.6.0 - 2023-05-31
+
+### Added
+* Order book related functions:
+  * calculate_available_volume (@jorgegarcia7)
+  * get_mid_price
+* Prices files related functions:
+  * get_inplay_publish_time_from_prices_file
+  * get_last_pre_event_market_book_from_prices_file
+* Race stream related functions:
+  * calculate_haversine_distance_between_runners
+  * get_number_of_jumps_remaining
+  * get_race_leaders
+* Race card related functions:
+  * get_is_jump_from_race_card
+### Changed
+* Made get_final_market_definition_from_prices_file more efficient
+* Race card extraction functions now work on both dictionaries and paths to files
+
 # 0.5.1 - 2023-02-25
 
 ### Added
