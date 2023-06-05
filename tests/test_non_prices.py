@@ -1301,3 +1301,7 @@ def test_get_total_volume_traded_from_prices_file(
         f.write("\n")
     total_volume_traded = get_total_volume_traded_from_prices_file(path_to_prices_file)
     assert total_volume_traded is None
+
+
+def test_publish_time_to_datetime():
+    assert publish_time_to_datetime(None) is None
