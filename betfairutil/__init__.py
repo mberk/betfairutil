@@ -2745,7 +2745,11 @@ def prices_file_to_data_frame(
         return df
 
 
-def publish_time_to_datetime(publish_time: int) -> datetime.datetime:
+def publish_time_to_datetime(
+    publish_time: Optional[int],
+) -> Optional[datetime.datetime]:
+    if publish_time is None:
+        return
     return datetime.datetime.utcfromtimestamp(publish_time / 1000).replace(
         tzinfo=datetime.timezone.utc
     )
