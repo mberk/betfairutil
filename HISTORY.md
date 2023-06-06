@@ -1,5 +1,11 @@
 # Release History
 
+# 0.6.1 - 2023-06-06
+
+### Changed
+
+* Handle None in publish_time_to_datetime
+
 # 0.6.0 - 2023-05-31
 
 ### Added
