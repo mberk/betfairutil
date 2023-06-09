@@ -1308,7 +1308,7 @@ def test_publish_time_to_datetime():
     assert publish_time_to_datetime(None) is None
 
 
-def test_datetime_to_publish_time(market_book: dict[str, Any]):
+def test_datetime_to_publish_time(market_book: Dict[str, Any]):
     assert datetime_to_publish_time(None) is None
     assert (
         datetime_to_publish_time(publish_time_to_datetime(market_book["publishTime"]))
