@@ -2748,11 +2748,15 @@ def prices_file_to_data_frame(
 def publish_time_to_datetime(
     publish_time: Optional[int],
 ) -> Optional[datetime.datetime]:
-    if publish_time is None:
-        return
-    return datetime.datetime.utcfromtimestamp(publish_time / 1000).replace(
-        tzinfo=datetime.timezone.utc
-    )
+    if publish_time is not None:
+        return datetime.datetime.utcfromtimestamp(publish_time / 1000).replace(
+            tzinfo=datetime.timezone.utc
+        )
+
+
+def datetime_to_publish_time(_datetime: Optional[datetime.datetime]) -> Optional[int]:
+    if _datetime is not None:
+        return int(_datetime.timestamp() * 1000)
 
 
 def create_market_book_generator_from_prices_file(
