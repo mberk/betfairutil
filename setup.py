@@ -8,7 +8,7 @@ tests_require = ["pytest"]
 
 setup(
     name="betfairutil",
-    version="0.6.1",
+    version="0.6.2",
     description="Utility functions for working with Betfair data",
     long_description=long_description,
     long_description_content_type="text/markdown",
