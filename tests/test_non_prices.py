@@ -22,6 +22,7 @@ from betfairutil import calculate_total_matched
 from betfairutil import convert_yards_to_metres
 from betfairutil import create_combined_market_book_and_race_change_generator
 from betfairutil import DataFrameFormatEnum
+from betfairutil import datetime_to_publish_time
 from betfairutil import does_market_book_contain_runner_names
 from betfairutil import does_market_definition_contain_runner_names
 from betfairutil import EX_KEYS
@@ -1305,3 +1306,11 @@ def test_get_total_volume_traded_from_prices_file(
 
 def test_publish_time_to_datetime():
     assert publish_time_to_datetime(None) is None
+
+
+def test_datetime_to_publish_time(market_book: dict[str, Any]):
+    assert datetime_to_publish_time(None) is None
+    assert (
+        datetime_to_publish_time(publish_time_to_datetime(market_book["publishTime"]))
+        == market_book["publishTime"]
+    )
