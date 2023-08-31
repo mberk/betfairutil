@@ -2,7 +2,7 @@ import datetime
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 import pytest
@@ -274,6 +274,33 @@ def path_to_race_file(race_change: Dict[str, Any], tmp_path: Path):
     return path_to_race_file
 
 
+def write_to_prices_file(
+    publish_time: int,
+    market_definition: Dict[str, Any],
+    rc: List[Dict[str, Any]],
+    path_to_prices_file: Path,
+    mode: str,
+) -> None:
+    with smart_open.open(path_to_prices_file, mode) as f:
+        f.write(
+            json.dumps(
+                {
+                    "op": "mcm",
+                    "clk": 0,
+                    "pt": publish_time,
+                    "mc": [
+                        {
+                            "id": "1.123",
+                            "marketDefinition": market_definition,
+                            "rc": rc,
+                        }
+                    ],
+                }
+            )
+        )
+        f.write("\n")
+
+
 @pytest.fixture
 def path_to_prices_file(
     market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
@@ -281,27 +308,16 @@ def path_to_prices_file(
     del market_definition["runners"][0]["name"]
     del market_definition["runners"][1]["name"]
     path_to_prices_file = tmp_path / f"1.123.json.gz"
-    with smart_open.open(path_to_prices_file, "w") as f:
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [
-                                {"id": 123, "atb": [[1.98, 1]]},
-                                {"id": 456, "atb": [[1.98, 1]]},
-                            ],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
+    write_to_prices_file(
+        publish_time=market_book["publishTime"],
+        market_definition=market_definition,
+        rc=[
+            {"id": 123, "atb": [[1.98, 1]]},
+            {"id": 456, "atb": [[1.98, 1]]},
+        ],
+        path_to_prices_file=path_to_prices_file,
+        mode="w",
+    )
 
     return path_to_prices_file
 
@@ -310,48 +326,47 @@ def path_to_prices_file(
 def path_to_prices_file_with_inplay_transition(
     market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
 ):
-    path_to_prices_file = tmp_path / f"1.123.json.gz"
-    with smart_open.open(path_to_prices_file, "w") as f:
-        market_definition["inPlay"] = False
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [
-                                {"id": 123, "trd": [[1.98, 1]]},
-                                {"id": 456, "trd": [[1.98, 1]]},
-                            ],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
-        market_definition["inPlay"] = True
-        f.write(
-            json.dumps(
-                {
-                    "op": "mcm",
-                    "clk": 0,
-                    "pt": market_book["publishTime"],
-                    "mc": [
-                        {
-                            "id": "1.123",
-                            "marketDefinition": market_definition,
-                            "rc": [],
-                        }
-                    ],
-                }
-            )
-        )
-        f.write("\n")
+    path_to_prices_file = tmp_path / f"1.123-inplay-transition.json.gz"
+    market_definition["inPlay"] = False
+    write_to_prices_file(
+        publish_time=market_book["publishTime"],
+        market_definition=market_definition,
+        rc=[
+            {"id": 123, "trd": [[1.98, 1]]},
+            {"id": 456, "trd": [[1.98, 1]]},
+        ],
+        path_to_prices_file=path_to_prices_file,
+        mode="w",
+    )
+    market_definition["inPlay"] = True
+    write_to_prices_file(
+        publish_time=market_book["publishTime"],
+        market_definition=market_definition,
+        rc=[],
+        path_to_prices_file=path_to_prices_file,
+        mode="a",
+    )
 
+    return path_to_prices_file
+
+
+@pytest.fixture
+def path_to_prices_file_with_turn_in_play_disabled(
+    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+):
+    path_to_prices_file = tmp_path / f"1.123-turn-in-play-disabled.json.gz"
+    market_definition["turnInPlayEnabled"] = False
+    market_definition["inPlay"] = False
+    write_to_prices_file(
+        publish_time=market_book["publishTime"],
+        market_definition=market_definition,
+        rc=[
+            {"id": 123, "trd": [[1.98, 1]]},
+            {"id": 456, "trd": [[1.98, 1]]},
+        ],
+        path_to_prices_file=path_to_prices_file,
+        mode="w",
+    )
     return path_to_prices_file
 
 
@@ -829,9 +844,15 @@ def test_get_final_market_definition_from_prices_file(
 
 def test_get_pre_event_volume_traded_from_prices_file(
     path_to_prices_file_with_inplay_transition: Path,
+    path_to_prices_file_with_turn_in_play_disabled: Path,
 ):
     volume_traded = get_pre_event_volume_traded_from_prices_file(
         path_to_prices_file_with_inplay_transition
+    )
+    assert volume_traded == 2
+
+    volume_traded = get_pre_event_volume_traded_from_prices_file(
+        path_to_prices_file_with_turn_in_play_disabled
     )
     assert volume_traded == 2
 
