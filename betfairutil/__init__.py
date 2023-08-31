@@ -2138,8 +2138,17 @@ def get_last_pre_event_market_book_from_prices_file(
     for market_book in g:
         if market_book["inplay"]:
             return pre_event_market_book
-        if not filter_suspended or market_book["status"] != "SUSPENDED":
+        if (
+            not (filter_suspended and market_book["status"] == "SUSPENDED")
+            and market_book["status"] != "CLOSED"
+        ):
             pre_event_market_book = market_book
+
+    if (
+        pre_event_market_book is not None
+        and not pre_event_market_book["marketDefinition"]["turnInPlayEnabled"]
+    ):
+        return pre_event_market_book
 
 
 def get_pre_event_volume_traded_from_prices_file(
