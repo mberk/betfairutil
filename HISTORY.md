@@ -1,5 +1,11 @@
 # Release History
 
+# 0.6.3 - 2023-08-31
+
+### Changed
+
+* Handle markets which don't turn in play in get_last_pre_event_market_book_from_prices_file
+
 # 0.6.2 - 2023-06-09
 
 ### Added
