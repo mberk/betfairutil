@@ -2343,21 +2343,34 @@ def get_win_market_id_from_race_file(
 
 
 def get_market_time_as_datetime(
-    market_book: Union[Dict[str, Any], MarketBook]
+    market_book_or_market_definition: Union[
+        Dict[str, Any], MarketBook, MarketDefinition
+    ]
 ) -> datetime.datetime:
     """
     Extract the market time - i.e. the time at which the market is due to start - as a TIMEZONE AWARE datetime object
 
-    :param market_book: The market book either as a dictionary or betfairlightweight MarketBook object from which to
-        extract the market (start) time
+    :param market_book_or_market_definition: Either a market book either as a dictionary or betfairlightweight
+        MarketBook object or a market definition either as a dictionary or betfairlightweight MarketDefinition object
+        from which to extract the market (start) time
     :return: The market (start) time as a TIMEZONE AWARE datetime object
     """
-    if isinstance(market_book, MarketBook):
-        market_time_datetime = market_book.market_definition.market_time.replace(
+    if isinstance(market_book_or_market_definition, MarketBook):
+        market_time_datetime = (
+            market_book_or_market_definition.market_definition.market_time.replace(
+                tzinfo=datetime.timezone.utc
+            )
+        )
+    elif isinstance(market_book_or_market_definition, MarketDefinition):
+        market_time_datetime = market_book_or_market_definition.market_time.replace(
             tzinfo=datetime.timezone.utc
         )
     else:
-        market_time_string = market_book["marketDefinition"]["marketTime"]
+        market_time_string = (
+            market_book_or_market_definition["marketDefinition"]["marketTime"]
+            if "marketDefinition" in market_book_or_market_definition
+            else market_book_or_market_definition["marketTime"]
+        )
         market_time_datetime = datetime.datetime.strptime(
             market_time_string, "%Y-%m-%dT%H:%M:%S.000Z"
         ).replace(tzinfo=datetime.timezone.utc)
