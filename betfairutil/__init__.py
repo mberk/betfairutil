@@ -2379,29 +2379,38 @@ def get_market_time_as_datetime(
 
 
 def get_seconds_to_market_time(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book_or_market_definition: Union[
+        Dict[str, Any], MarketBook, MarketDefinition
+    ],
     current_time: Optional[Union[int, datetime.datetime]] = None,
 ) -> float:
     """
-    Given a market book and an optional notional current time, extract the market (start) time from the market book and
-    calculate the difference in seconds between it and the current time. If current_time is not provided then the
+    Given a market book or market definition and an optional notional current time, extract the market (start) time from
+    the market book/definition and calculate the difference in seconds between it and the current time. The current_time
+    MUST be provided if using a market definition. If using a market book and current_time is not provided then the
     publish time of the market book will be used
 
-    :param market_book: A market book either as a dictionary or betfairlightweight MarketBook object
+    :param market_book_or_market_definition: Either a market book either as a dictionary or betfairlightweight
+        MarketBook object or a market definition either as a dictionary or betfairlightweight MarketDefinition object
     :param current_time: An optional notional current time, either as an integer number of milliseconds since the Unix
-        epoch or a datetime object
+        epoch or a datetime object. If market_book_or_market_definition is a market definition then this MUST be
+        provided
     :return: The number of seconds between the market time and current_time if provided, otherwise the number of seconds
         between the market time and the publish time of the market book
     """
-    market_time = get_market_time_as_datetime(market_book)
+    market_time = get_market_time_as_datetime(market_book_or_market_definition)
 
     if current_time is None:
-        if isinstance(market_book, MarketBook):
-            current_time = market_book.publish_time.replace(
+        if isinstance(market_book_or_market_definition, MarketBook):
+            current_time = market_book_or_market_definition.publish_time.replace(
                 tzinfo=datetime.timezone.utc
             )
+        elif isinstance(market_book_or_market_definition, MarketDefinition):
+            raise ValueError(
+                "current_time argument must be provided if market_book_or_market_definition is a market definition"
+            )
         else:
-            current_time = market_book["publishTime"]
+            current_time = market_book_or_market_definition["publishTime"]
 
     if isinstance(current_time, int):
         current_time = publish_time_to_datetime(current_time)
