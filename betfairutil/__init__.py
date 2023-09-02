@@ -15,6 +15,7 @@ from math import sqrt
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     List,
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
 
 from betfairlightweight import APIClient
 from betfairlightweight import StreamListener
+from betfairlightweight.streaming.cache import MarketBookCache
+from betfairlightweight.streaming.stream import BaseStream
 from betfairlightweight.resources.bettingresources import MarketBook
 from betfairlightweight.resources.bettingresources import MarketCatalogue
 from betfairlightweight.resources.bettingresources import PriceSize
@@ -1541,6 +1544,59 @@ class MarketBookDiff:
         return self.d[(selection_id, handicap)].get(ex_key)
 
 
+class FilteredStreamListener(StreamListener):
+    def __init__(self, condition: Callable[[MarketBookCache], bool], **kwargs):
+        super(FilteredStreamListener, self).__init__(**kwargs)
+        self.condition = condition
+
+    def snap(
+        self, market_ids: List[int] = None
+    ) -> List[Union[MarketBook, Dict[str, Any]]]:
+        return [
+            cache.create_resource(self.stream.unique_id, snap=True)
+            for cache in list(self.stream._caches.values())
+            if cache.active
+            and (market_ids is None or cache.market_id in market_ids)
+            and self.condition(cache)
+        ]
+
+    def _add_stream(self, unique_id: int, operation: str) -> BaseStream:
+        if operation != "marketSubscription":
+            raise NotImplementedError
+        return super(StreamListener, self)._add_stream(unique_id, operation)
+
+
+def get_market_book_from_prices_file(
+    path_to_prices_file: Union[str, Path],
+    condition: Callable[[MarketBookCache], bool],
+    lightweight: bool = True,
+    **kwargs,
+) -> Optional[Union[MarketBook, Dict[str, Any]]]:
+    """
+    Gets a single market book from a prices file matching some condition, if such a market book exists. This function is
+    designed to be as efficient as possible and does not construct each individual market book before the condition
+    is met. It does this by operating on betfairlightweight MarketBookCache objects so familiarity with the structure
+    of these objects is essential for expressing the condition correctly
+
+    :param path_to_prices_file: Where the Betfair prices file to be processed is located. This can be a local file, one
+        stored in AWS S3, or any of the other options that can be handled by the smart_open package. The file can be
+        compressed or uncompressed
+    :param condition: A Callable which takes a single MarketBookCache argument and returns a bool which indicates
+        whether, according to the current state of the cache, to stop searching the prices file and return the current
+        state of the cache as a market book
+    :param lightweight: Passed to FilteredStreamListener. When True, the returned market book with be a dict. When
+        false, the returned market book will be a betfairlightweight MarketBook object
+    :param kwargs: Passed to FilteredStreamListener
+    :return: A market book, either as a dict or betfairlightweight MarketBook object depending on whether the
+        lightweight parameter is True or False respectively, if such a market book meeting condition can be found in the
+        prices file, otherwise None
+    """
+    g = create_market_book_generator_from_prices_file(
+        path_to_prices_file, lightweight=lightweight, condition=condition, **kwargs
+    )
+    return next(g, None)
+
+
 def calculate_book_percentage(
     market_book: Union[Dict[str, Any], MarketBook], side: Side
 ) -> float:
@@ -2794,6 +2850,7 @@ def create_market_book_generator_from_prices_file(
     path_to_prices_file: Union[str, Path],
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
+    condition: Optional[Callable[[MarketBookCache], bool]] = None,
     **kwargs,
 ) -> Generator[
     Union[MarketBook, Dict[str, Any]], None, List[Union[MarketBook, Dict[str, Any]]]
@@ -2807,6 +2864,14 @@ def create_market_book_generator_from_prices_file(
         file_path=path_to_prices_file,
         listener=StreamListener(
             max_latency=None, lightweight=lightweight, update_clk=False, **kwargs
+        )
+        if condition is None
+        else FilteredStreamListener(
+            condition=condition,
+            max_latency=None,
+            lightweight=lightweight,
+            update_clk=False,
+            **kwargs,
         ),
     )
 
