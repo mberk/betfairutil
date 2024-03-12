@@ -2,7 +2,7 @@ import datetime
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -177,7 +177,7 @@ def market_definition():
 
 
 @pytest.fixture
-def market_book(market_definition: Dict[str, Any]):
+def market_book(market_definition: dict[str, Any]):
     return {
         "runners": [
             {
@@ -238,7 +238,7 @@ def race_change():
 
 
 @pytest.fixture
-def path_to_race_result_file(race_result: Dict[str, Any], tmp_path: Path):
+def path_to_race_result_file(race_result: dict[str, Any], tmp_path: Path):
     path_to_race_result_file = tmp_path / "race-result.gz"
     with smart_open.open(path_to_race_result_file, "w") as f:
         f.write(json.dumps(race_result))
@@ -247,7 +247,7 @@ def path_to_race_result_file(race_result: Dict[str, Any], tmp_path: Path):
 
 
 @pytest.fixture
-def path_to_race_card_file(race_card: Dict[str, Any], tmp_path: Path):
+def path_to_race_card_file(race_card: dict[str, Any], tmp_path: Path):
     path_to_race_card_file = tmp_path / "race-card.gz"
     with smart_open.open(path_to_race_card_file, "w") as f:
         f.write(json.dumps(race_card))
@@ -256,7 +256,7 @@ def path_to_race_card_file(race_card: Dict[str, Any], tmp_path: Path):
 
 
 @pytest.fixture
-def path_to_race_file(race_change: Dict[str, Any], tmp_path: Path):
+def path_to_race_file(race_change: dict[str, Any], tmp_path: Path):
     path_to_race_file = tmp_path / f"31945198.2354.jsonl.gz"
     with smart_open.open(path_to_race_file, "w") as f:
         f.write(
@@ -276,8 +276,8 @@ def path_to_race_file(race_change: Dict[str, Any], tmp_path: Path):
 
 def write_to_prices_file(
     publish_time: int,
-    market_definition: Dict[str, Any],
-    rc: List[Dict[str, Any]],
+    market_definition: dict[str, Any],
+    rc: list[dict[str, Any]],
     path_to_prices_file: Path,
     mode: str,
 ) -> None:
@@ -303,7 +303,7 @@ def write_to_prices_file(
 
 @pytest.fixture
 def path_to_prices_file(
-    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+    market_book: dict[str, Any], market_definition: dict[str, Any], tmp_path: Path
 ):
     del market_definition["runners"][0]["name"]
     del market_definition["runners"][1]["name"]
@@ -324,7 +324,7 @@ def path_to_prices_file(
 
 @pytest.fixture
 def path_to_prices_file_with_inplay_transition(
-    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+    market_book: dict[str, Any], market_definition: dict[str, Any], tmp_path: Path
 ):
     path_to_prices_file = tmp_path / f"1.123-inplay-transition.json.gz"
     market_definition["inPlay"] = False
@@ -352,7 +352,7 @@ def path_to_prices_file_with_inplay_transition(
 
 @pytest.fixture
 def path_to_prices_file_with_turn_in_play_disabled(
-    market_book: Dict[str, Any], market_definition: Dict[str, Any], tmp_path: Path
+    market_book: dict[str, Any], market_definition: dict[str, Any], tmp_path: Path
 ):
     path_to_prices_file = tmp_path / f"1.123-turn-in-play-disabled.json.gz"
     market_definition["turnInPlayEnabled"] = False
@@ -376,7 +376,7 @@ def test_side():
 
 @pytest.mark.parametrize("use_market_book_objects", [False, True])
 def test_calculate_book_percentage(
-    market_book: Dict[str, Any], use_market_book_objects: bool
+    market_book: dict[str, Any], use_market_book_objects: bool
 ):
     assert (
         calculate_book_percentage(
@@ -405,7 +405,7 @@ def test_calculate_book_percentage(
     )
 
 
-def test_calculate_market_book_diff(market_book: Dict[str, Any]):
+def test_calculate_market_book_diff(market_book: dict[str, Any]):
     market_book_diff = calculate_market_book_diff(market_book, market_book)
     for runner in market_book["runners"]:
         for ex_key in EX_KEYS:
@@ -445,7 +445,7 @@ def test_calculate_market_book_diff(market_book: Dict[str, Any]):
 
 @pytest.mark.parametrize("use_market_book_objects", [False, True])
 def test_calculate_total_matched(
-    market_book: Dict[str, Any], use_market_book_objects: bool
+    market_book: dict[str, Any], use_market_book_objects: bool
 ):
     assert (
         calculate_total_matched(
@@ -455,7 +455,7 @@ def test_calculate_total_matched(
     )
 
 
-def test_does_market_book_contain_runner_names(market_book: Dict[str, Any]):
+def test_does_market_book_contain_runner_names(market_book: dict[str, Any]):
     assert does_market_book_contain_runner_names(market_book)
     assert not does_market_book_contain_runner_names(MarketBook(**market_book))
     assert does_market_book_contain_runner_names(
@@ -466,7 +466,7 @@ def test_does_market_book_contain_runner_names(market_book: Dict[str, Any]):
     )
 
 
-def test_does_market_definition_contain_runner_names(market_definition: Dict[str, Any]):
+def test_does_market_definition_contain_runner_names(market_definition: dict[str, Any]):
     assert does_market_definition_contain_runner_names(
         MarketDefinition(**market_definition)
     )
@@ -476,7 +476,7 @@ def test_does_market_definition_contain_runner_names(market_definition: Dict[str
     )
 
 
-def test_filter_runners(market_book: Dict[str, Any]):
+def test_filter_runners(market_book: dict[str, Any]):
     assert (
         len(
             list(
@@ -497,7 +497,7 @@ def test_filter_runners(market_book: Dict[str, Any]):
     )
 
 
-def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
+def test_get_runner_book_from_market_book(market_book: dict[str, Any]):
     with pytest.raises(ValueError):
         get_runner_book_from_market_book(
             market_book, selection_id=123, runner_name="foo"
@@ -544,7 +544,7 @@ def test_get_runner_book_from_market_book(market_book: Dict[str, Any]):
     assert get_runner_book_from_market_book(market_book, selection_id=123) is None
 
 
-def test_get_best_price_with_rollup(market_book: Dict[str, Any]):
+def test_get_best_price_with_rollup(market_book: dict[str, Any]):
     runner_book = get_runner_book_from_market_book(market_book, 123)
     runner_book["ex"]["availableToBack"].append({"price": 1.97, "size": 1})
     assert get_best_price_with_rollup(runner_book, Side.BACK, 10) is None
@@ -591,7 +591,7 @@ def test_get_race_id_from_string():
 
 
 def test_get_selection_id_to_runner_name_map_from_market_catalogue(
-    market_catalogue: Dict[str, Any]
+    market_catalogue: dict[str, Any]
 ):
     assert get_selection_id_to_runner_name_map_from_market_catalogue(
         market_catalogue
@@ -606,14 +606,14 @@ def test_convert_yards_to_metres():
 
 
 def test_get_race_distance_in_metres_from_race_card(
-    race_card: Dict[str, Any], path_to_race_card_file: Path
+    race_card: dict[str, Any], path_to_race_card_file: Path
 ):
     assert get_race_distance_in_metres_from_race_card(race_card) == 914.4
     assert get_race_distance_in_metres_from_race_card(path_to_race_card_file) == 914.4
 
 
 def test_get_win_market_id_from_race_card(
-    race_card: Dict[str, Any], path_to_race_card_file: Path
+    race_card: dict[str, Any], path_to_race_card_file: Path
 ):
     assert get_win_market_id_from_race_card(race_card) == "1.456"
     assert get_win_market_id_from_race_card(race_card, as_integer=True) == 456
@@ -625,9 +625,9 @@ def test_get_win_market_id_from_race_card(
 
 
 def test_is_market_book(
-    market_book: Dict[str, Any],
-    market_catalogue: Dict[str, Any],
-    race_card: Dict[str, Any],
+    market_book: dict[str, Any],
+    market_catalogue: dict[str, Any],
+    race_card: dict[str, Any],
 ):
     assert is_market_book(market_book)
     assert not is_market_book(market_catalogue)

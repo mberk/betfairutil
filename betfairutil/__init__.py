@@ -6,6 +6,8 @@ import re
 from bisect import bisect_left
 from bisect import bisect_right
 from collections import deque
+from collections.abc import Mapping
+from collections.abc import Sequence
 from copy import deepcopy
 from math import asin
 from math import cos
@@ -15,14 +17,8 @@ from math import sqrt
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
     Generator,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -1467,7 +1463,7 @@ class _OpenMocker:
             return _ORIGINAL_OPEN(file, *args, **kwargs)
 
 
-def _load_json_object(o: Union[Dict[str, Any], str, Path]) -> Dict[str, Any]:
+def _load_json_object(o: Union[dict[str, Any], str, Path]) -> dict[str, Any]:
     """
     Takes either a JSON object and simply returns it or a path to a JSON file containing a JSON
     object in which case read that file and return the JSON object it contains
@@ -1528,21 +1524,21 @@ class Side(enum.Enum):
 class MarketBookDiff:
     def __init__(
         self,
-        d: Dict[
-            Tuple[int, Union[int, float]],
-            Dict[str, Dict[Union[int, float], Union[int, float]]],
+        d: dict[
+            tuple[int, Union[int, float]],
+            dict[str, dict[Union[int, float], Union[int, float]]],
         ],
     ):
         self.d = d
 
     def get_size_changes(
         self, selection_id: int, ex_key: str, handicap: Union[int, float] = 0.0
-    ) -> Optional[Dict[Union[int, float], Union[int, float]]]:
+    ) -> Optional[dict[Union[int, float], Union[int, float]]]:
         return self.d[(selection_id, handicap)].get(ex_key)
 
 
 def calculate_book_percentage(
-    market_book: Union[Dict[str, Any], MarketBook], side: Side
+    market_book: Union[dict[str, Any], MarketBook], side: Side
 ) -> float:
     implied_probabilities = []
     for runner in iterate_active_runners(market_book):
@@ -1567,7 +1563,7 @@ def calculate_book_percentage(
 
 
 def calculate_available_volume(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Union[dict[str, Any], MarketBook],
     side: Side,
     max_book_percentage: float,
 ) -> float:
@@ -1598,8 +1594,8 @@ def calculate_available_volume(
 
 
 def calculate_market_book_diff(
-    current_market_book: Union[Dict[str, Any], MarketBook],
-    previous_market_book: Union[Dict[str, Any], MarketBook],
+    current_market_book: Union[dict[str, Any], MarketBook],
+    previous_market_book: Union[dict[str, Any], MarketBook],
 ) -> MarketBookDiff:
     """
     Calculate the size differences between amounts available to back, available to lay, and traded between two market books
@@ -1651,7 +1647,7 @@ def calculate_market_book_diff(
 
 
 def calculate_order_book_imbalance(
-    runner_book: Union[Dict[str, Any], RunnerBook]
+    runner_book: Union[dict[str, Any], RunnerBook]
 ) -> Optional[float]:
     best_back_price_size = get_best_price_size(runner_book, Side.BACK)
     if best_back_price_size is not None:
@@ -1684,7 +1680,7 @@ def calculate_price_difference(a: Union[int, float], b: Union[int, float]) -> in
 
 
 def calculate_total_matched(
-    market_book: Union[Dict[str, Any], MarketBook]
+    market_book: Union[dict[str, Any], MarketBook]
 ) -> Union[int, float]:
     """
     Calculate the total matched on this market from the amounts matched on each runner at each price point. Useful for historic data where this field is not populated
@@ -1710,7 +1706,7 @@ def convert_yards_to_metres(yards: Optional[Union[int, float]]) -> Optional[floa
 
 
 def does_market_book_contain_runner_names(
-    market_book: Union[Dict[str, Any], MarketBook]
+    market_book: Union[dict[str, Any], MarketBook]
 ) -> bool:
     if isinstance(market_book, dict):
         market_definition = market_book["marketDefinition"]
@@ -1723,7 +1719,7 @@ def does_market_book_contain_runner_names(
 
 
 def does_market_definition_contain_runner_names(
-    market_definition: Union[Dict[str, Any], MarketDefinition]
+    market_definition: Union[dict[str, Any], MarketDefinition]
 ) -> bool:
     if isinstance(market_definition, dict):
         runners = market_definition.get("runners", [])
@@ -1744,10 +1740,10 @@ def does_market_definition_contain_runner_names(
 
 
 def filter_runners(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Union[dict[str, Any], MarketBook],
     status: str,
     excluded_selection_ids: Sequence[int],
-) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+) -> Generator[Union[dict[str, Any], RunnerBook], None, None]:
     if isinstance(market_book, dict):
         runners = market_book["runners"]
     else:
@@ -1773,7 +1769,7 @@ def get_runner_book_from_market_book(
     runner_name: Optional[str] = None,
     handicap: float = 0.0,
     return_type: Optional[type] = None,
-) -> Optional[Union[Dict[str, Any], RunnerBook]]:
+) -> Optional[Union[dict[str, Any], RunnerBook]]:
     """
     Extract a runner book from the given market book. The runner can be identified either by ID or name
 
@@ -1820,8 +1816,8 @@ def get_runner_book_from_market_book(
 
 
 def get_best_price_size(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
-) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    runner: Union[dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[dict[str, Union[int, float]], PriceSize]]:
     if isinstance(runner, RunnerBook):
         return next(iter(getattr(runner.ex, side.ex_attribute)), None)
     else:
@@ -1829,7 +1825,7 @@ def get_best_price_size(
 
 
 def get_mid_price(
-    runner: Union[Dict[str, Any], RunnerBook]
+    runner: Union[dict[str, Any], RunnerBook]
 ) -> Optional[Union[int, float]]:
     best_back = get_best_price(runner, Side.BACK)
     best_lay = get_best_price(runner, Side.LAY)
@@ -1838,7 +1834,7 @@ def get_mid_price(
 
 
 def get_best_price(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
+    runner: Union[dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
     """
     Get the best price available on a runner on side Side. This is a convenience function which retrieves the best price/size pair using get_best_price_size then returns the price field
@@ -1855,8 +1851,8 @@ def get_best_price(
 
 
 def get_price_size_by_depth(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side, depth: int
-) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    runner: Union[dict[str, Any], RunnerBook], side: Side, depth: int
+) -> Optional[Union[dict[str, Union[int, float]], PriceSize]]:
     if isinstance(runner, RunnerBook):
         available = getattr(runner.ex, side.ex_attribute)
     else:
@@ -1867,13 +1863,13 @@ def get_price_size_by_depth(
 
 
 def get_second_best_price_size(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
-) -> Optional[Union[Dict[str, Union[int, float]], PriceSize]]:
+    runner: Union[dict[str, Any], RunnerBook], side: Side
+) -> Optional[Union[dict[str, Union[int, float]], PriceSize]]:
     return get_price_size_by_depth(runner=runner, side=side, depth=1)
 
 
 def get_second_best_price(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
+    runner: Union[dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
     second_best_price_size = get_second_best_price_size(runner, side)
     if isinstance(second_best_price_size, PriceSize):
@@ -1883,7 +1879,7 @@ def get_second_best_price(
 
 
 def get_best_price_with_rollup(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side, rollup: Union[int, float]
+    runner: Union[dict[str, Any], RunnerBook], side: Side, rollup: Union[int, float]
 ) -> Optional[Union[int, float]]:
     """
     Get the best price available on a runner on side Side when rolling up any volumes less than rollup
@@ -1912,7 +1908,7 @@ def get_best_price_with_rollup(
 
 
 def get_inside_best_price(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
+    runner: Union[dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
     """
     Get the price one step up (side == Side.BACK) or down (side == Side.LAY) the Betfair price ladder from a runner's best available price
@@ -1926,7 +1922,7 @@ def get_inside_best_price(
 
 
 def get_outside_best_price(
-    runner: Union[Dict[str, Any], RunnerBook], side: Side
+    runner: Union[dict[str, Any], RunnerBook], side: Side
 ) -> Optional[Union[int, float]]:
     """
     Get the price one step down (side == Side.BACK) or up (side == Side.LAY) the Betfair price ladder from a runner's best available price
@@ -1939,7 +1935,7 @@ def get_outside_best_price(
     return side.next_worse_price_map.get(best_price)
 
 
-def get_spread(runner: Union[Dict[str, Any], RunnerBook]) -> Optional[int]:
+def get_spread(runner: Union[dict[str, Any], RunnerBook]) -> Optional[int]:
     """
     Get the spread - the difference between the best available to lay and best available to back prices - on a runner in terms of number of steps on the Betfair price ladder
 
@@ -1998,8 +1994,8 @@ def get_race_id_from_string(s: str) -> Optional[str]:
 
 
 def get_selection_id_to_runner_name_map_from_market_catalogue(
-    market_catalogue: Union[Dict[str, Any], MarketCatalogue]
-) -> Dict[int, str]:
+    market_catalogue: Union[dict[str, Any], MarketCatalogue]
+) -> dict[int, str]:
     if isinstance(market_catalogue, dict):
         runners = market_catalogue["runners"]
     else:
@@ -2018,8 +2014,8 @@ def get_selection_id_to_runner_name_map_from_market_catalogue(
 
 
 def get_bsp_from_market_definition(
-    market_definition: Dict[str, Any]
-) -> Dict[int, Optional[Union[int, float]]]:
+    market_definition: dict[str, Any]
+) -> dict[int, Optional[Union[int, float]]]:
     """
     Extract a dictionary mapping selection ID to Betfair starting price from a market definition object. Only gives a
     meaningful result when a market definition from after reconciliation of Betfair starting price is used
@@ -2034,7 +2030,7 @@ def get_bsp_from_market_definition(
 
 def get_bsp_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> Dict[int, Optional[Union[int, float]]]:
+) -> dict[int, Optional[Union[int, float]]]:
     """
     Extract a dictionary mapping selection ID to Betfair starting price from the given prices file. Practically
     speaking, the final market definition is extracted from the prices file then the Betfair starting prices are
@@ -2049,7 +2045,7 @@ def get_bsp_from_prices_file(
     return get_bsp_from_market_definition(market_definition)
 
 
-def get_winners_from_market_definition(market_definition: Dict[str, Any]) -> List[int]:
+def get_winners_from_market_definition(market_definition: dict[str, Any]) -> list[int]:
     selection_ids = [
         runner["id"]
         for runner in market_definition["runners"]
@@ -2058,7 +2054,7 @@ def get_winners_from_market_definition(market_definition: Dict[str, Any]) -> Lis
     return selection_ids
 
 
-def get_winners_from_prices_file(path_to_prices_file: Union[str, Path]) -> List[int]:
+def get_winners_from_prices_file(path_to_prices_file: Union[str, Path]) -> list[int]:
     market_definition = get_final_market_definition_from_prices_file(
         path_to_prices_file
     )
@@ -2067,7 +2063,7 @@ def get_winners_from_prices_file(path_to_prices_file: Union[str, Path]) -> List[
 
 def get_final_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """
     Get the last occurring market definition from the given prices file. This is typically useful for determining the outcome (winner) of the market
 
@@ -2090,7 +2086,7 @@ def get_final_market_definition_from_prices_file(
 
 def create_market_definition_generator_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> Generator[Tuple[int, Dict[str, Any]], None, None]:
+) -> Generator[tuple[int, dict[str, Any]], None, None]:
     import orjson
     import smart_open
 
@@ -2107,7 +2103,7 @@ def create_market_definition_generator_from_prices_file(
 
 def get_all_market_definitions_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> List[Tuple[int, Dict[str, Any]]]:
+) -> list[tuple[int, dict[str, Any]]]:
     return list(
         create_market_definition_generator_from_prices_file(path_to_prices_file)
     )
@@ -2115,7 +2111,7 @@ def get_all_market_definitions_from_prices_file(
 
 def get_first_market_definition_from_prices_file(
     path_to_prices_file: Union[str, Path]
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     _, market_definition = next(
         create_market_definition_generator_from_prices_file(path_to_prices_file),
         (None, None),
@@ -2125,7 +2121,7 @@ def get_first_market_definition_from_prices_file(
 
 def get_last_pre_event_market_book_from_prices_file(
     path_to_prices_file: Union[str, Path], filter_suspended: bool = True
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """
     Search a prices file for the last market book before the market turned in play
 
@@ -2229,13 +2225,13 @@ def get_total_volume_traded_from_prices_file(
         return 0
 
 
-def _is_exchange_win_market(d: Dict[str, Any]) -> bool:
+def _is_exchange_win_market(d: dict[str, Any]) -> bool:
     return d["marketType"] == "WIN" and d["marketId"].startswith("1.")
 
 
 def get_bsp_from_race_result(
-    race_result: Union[Dict[str, Any], str, Path]
-) -> Dict[int, Optional[Union[int, float]]]:
+    race_result: Union[dict[str, Any], str, Path]
+) -> dict[int, Optional[Union[int, float]]]:
     """
     Extract a dictionary mapping selection ID to Betfair starting price from a race result object scraped from the
     undocumented RaceCard endpoint (see
@@ -2259,8 +2255,8 @@ def get_bsp_from_race_result(
 
 
 def get_winners_from_race_result(
-    race_result: Union[Dict[str, Any], str, Path]
-) -> List[int]:
+    race_result: Union[dict[str, Any], str, Path]
+) -> list[int]:
     """
     Extract a list of winning selection IDs from a race result object scraped from the undocumented RaceCard endpoint
     (see https://github.com/betcode-org/betfair/blob/master/betfairlightweight/endpoints/racecard.py)
@@ -2289,7 +2285,7 @@ def get_winners_from_race_result(
 
 
 def get_race_distance_in_metres_from_race_card(
-    race_card: Union[Dict[str, Any], str, Path]
+    race_card: Union[dict[str, Any], str, Path]
 ) -> float:
     """
     Extract the race distance from a race card object in yards then convert it to metres
@@ -2304,14 +2300,14 @@ def get_race_distance_in_metres_from_race_card(
     return distance_in_metres
 
 
-def get_is_jump_from_race_card(race_card: Union[Dict[str, Any], str, Path]) -> bool:
+def get_is_jump_from_race_card(race_card: Union[dict[str, Any], str, Path]) -> bool:
     race_card = _load_json_object(race_card)
     race_type = race_card["race"]["raceType"]["full"]
     return race_type in ("Chase", "Hurdle")
 
 
 def get_win_market_id_from_race_card(
-    race_card: Union[Dict[str, Any], str, Path], as_integer: bool = False
+    race_card: Union[dict[str, Any], str, Path], as_integer: bool = False
 ) -> Optional[Union[int, str]]:
     """
     Search the markets contained in a race card for the one corresponding to the Exchange WIN
@@ -2343,7 +2339,7 @@ def get_win_market_id_from_race_file(
 
 
 def get_market_time_as_datetime(
-    market_book: Union[Dict[str, Any], MarketBook]
+    market_book: Union[dict[str, Any], MarketBook]
 ) -> datetime.datetime:
     """
     Extract the market time - i.e. the time at which the market is due to start - as a TIMEZONE AWARE datetime object
@@ -2366,7 +2362,7 @@ def get_market_time_as_datetime(
 
 
 def get_seconds_to_market_time(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Union[dict[str, Any], MarketBook],
     current_time: Optional[Union[int, datetime.datetime]] = None,
 ) -> float:
     """
@@ -2483,15 +2479,15 @@ def is_price_worse(a: Union[int, float], b: Union[int, float], side: Side) -> bo
 
 
 def iterate_active_runners(
-    market_book: Union[Dict[str, Any], MarketBook]
-) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    market_book: Union[dict[str, Any], MarketBook]
+) -> Generator[Union[dict[str, Any], RunnerBook], None, None]:
     for runner in filter_runners(market_book, "ACTIVE", []):
         yield runner
 
 
 def iterate_other_active_runners(
-    market_book: Union[Dict[str, Any], MarketBook], selection_id: int
-) -> Generator[Union[Dict[str, Any], RunnerBook], None, None]:
+    market_book: Union[dict[str, Any], MarketBook], selection_id: int
+) -> Generator[Union[dict[str, Any], RunnerBook], None, None]:
     for runner in iterate_active_runners(market_book):
         if runner["selectionId"] == selection_id:
             continue
@@ -2519,7 +2515,7 @@ def make_price_betfair_valid(
 
 
 def market_book_to_data_frame(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Union[dict[str, Any], MarketBook],
     should_output_runner_names: bool = False,
     should_output_runner_statuses: bool = False,
     should_format_publish_time: bool = False,
@@ -2640,9 +2636,9 @@ def prices_file_to_data_frame(
     should_format_publish_time: bool = False,
     should_restrict_to_inplay: bool = False,
     max_depth: Optional[int] = None,
-    market_definition_fields: Dict[str, str] = None,
+    market_definition_fields: dict[str, str] = None,
     market_type_filter: Optional[Sequence[str]] = None,
-    market_catalogues: Optional[Sequence[Union[Dict[str, Any], MarketBook]]] = None,
+    market_catalogues: Optional[Sequence[Union[dict[str, Any], MarketBook]]] = None,
     _format: DataFrameFormatEnum = DataFrameFormatEnum.FULL_LADDER,
 ) -> "pd.DataFrame":
     """
@@ -2774,7 +2770,7 @@ def create_market_book_generator_from_prices_file(
     market_type_filter: Optional[Sequence[str]] = None,
     **kwargs,
 ) -> Generator[
-    Union[MarketBook, Dict[str, Any]], None, List[Union[MarketBook, Dict[str, Any]]]
+    Union[MarketBook, dict[str, Any]], None, list[Union[MarketBook, dict[str, Any]]]
 ]:
     from unittest.mock import patch
 
@@ -2815,7 +2811,7 @@ def get_market_books_from_prices_file(
     publish_times: Sequence[int],
     lightweight: bool = True,
     **kwargs,
-) -> Dict[int, Optional[Union[MarketBook, Dict[str, Any]]]]:
+) -> dict[int, Optional[Union[MarketBook, dict[str, Any]]]]:
     """Extract the market books corresponding to the given publish times from a Betfair prices file
 
     The market books are extracted as a list of tuples of publish time and market book. If a publish time does not
@@ -2870,10 +2866,10 @@ def get_market_books_from_prices_file(
 
 def get_minimum_book_percentage_market_books_from_prices_file(
     path_to_prices_file: Union[str, Path],
-    publish_time_windows: Sequence[Tuple[int, int]],
+    publish_time_windows: Sequence[tuple[int, int]],
     lightweight: bool = True,
     **kwargs,
-) -> Dict[Tuple[int, int], Optional[Union[MarketBook, Dict[str, Any]]]]:
+) -> dict[tuple[int, int], Optional[Union[MarketBook, dict[str, Any]]]]:
     for window in publish_time_windows:
         assert window[0] < window[1]
 
@@ -2936,7 +2932,7 @@ def get_minimum_book_percentage_market_books_from_prices_file(
 
 def create_race_change_generator_from_race_file(
     path_to_race_file: Union[str, Path],
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[dict[str, Any], None, None]:
     from unittest.mock import patch
 
     open_mocker = _OpenMocker(path_to_race_file)
@@ -2954,7 +2950,7 @@ def create_race_change_generator_from_race_file(
                 yield rc
 
 
-def get_publish_time_from_object(o: Union[Dict[str, Any], MarketBook]) -> int:
+def get_publish_time_from_object(o: Union[dict[str, Any], MarketBook]) -> int:
     _data = getattr(o, "_data", o)
     return _data.get("publishTime", _data.get("pt"))
 
@@ -2965,7 +2961,7 @@ def create_combined_market_book_and_race_change_generator(
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
     **kwargs,
-) -> Generator[Tuple[bool, Union[MarketBook, Dict[str, Any]]], None, None]:
+) -> Generator[tuple[bool, Union[MarketBook, dict[str, Any]]], None, None]:
     """
     Creates a generator for reading a Betfair prices file and a scraped race stream file simultaneously. The market book
     and race change objects will be interleaved and returned from the generator in publish time order. The generator
@@ -3008,10 +3004,10 @@ def read_prices_file(
     lightweight: bool = True,
     market_type_filter: Optional[Sequence[str]] = None,
     market_catalogues: Optional[
-        Sequence[Union[Dict[str, Any], MarketCatalogue]]
+        Sequence[Union[dict[str, Any], MarketCatalogue]]
     ] = None,
     **kwargs,
-) -> Union[List[MarketBook], List[Dict[str, Any]]]:
+) -> Union[list[MarketBook], list[dict[str, Any]]]:
     """
     Read a Betfair prices file (either from the official historic data or data recorded from the streaming API in the same format) into memory as a list of dicts or betfairlightweight MarketBook objects
 
@@ -3060,7 +3056,7 @@ def read_prices_file(
     return market_books
 
 
-def read_race_file(path_to_race_file: Union[str, Path]) -> List[Dict[str, Any]]:
+def read_race_file(path_to_race_file: Union[str, Path]) -> list[dict[str, Any]]:
     race_changes = list(create_race_change_generator_from_race_file(path_to_race_file))
     return race_changes
 
@@ -3069,7 +3065,7 @@ def get_race_change_from_race_file(
     path_to_race_file: Union[str, Path],
     gate_name: Optional[str] = None,
     publish_time: Optional[int] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """
     Search a recorded race file for the first update after the given criterion. You can search EITHER by the gate name,
     for example "1f" to get the first race change after entering the final furlong, OR by publish time. The latter is
@@ -3096,11 +3092,11 @@ def get_race_change_from_race_file(
 
 
 def remove_bet_from_runner_book(
-    runner_book: Union[Dict[str, Any], RunnerBook],
+    runner_book: Union[dict[str, Any], RunnerBook],
     price: Union[int, float],
     size: Union[int, float],
     available_side: Side,
-) -> Union[Dict[str, Any], RunnerBook]:
+) -> Union[dict[str, Any], RunnerBook]:
     """
     Create a new runner book with a bet removed from the order book
 
@@ -3179,7 +3175,7 @@ random_from_event_id = random_from_positive_int
 
 
 def calculate_haversine_distance_between_runners(
-    rrc_a: Dict[str, Any], rrc_b: Dict[str, Any]
+    rrc_a: dict[str, Any], rrc_b: dict[str, Any]
 ) -> float:
     """
     Given two rrc objects from the Betfair race stream, calculate the approximate distance
@@ -3201,7 +3197,7 @@ def calculate_haversine_distance_between_runners(
     return 2 * _AVERAGE_EARTH_RADIUS_IN_METERS * asin(sqrt(d))
 
 
-def get_number_of_jumps_remaining(rc: Dict[str, Any]) -> Optional[int]:
+def get_number_of_jumps_remaining(rc: dict[str, Any]) -> Optional[int]:
     """
     Given a race change object, work out how many jumps there are between the _leader_ and the
     finishing line. If there are no jump locations present in the race change object, either
@@ -3218,7 +3214,7 @@ def get_number_of_jumps_remaining(rc: Dict[str, Any]) -> Optional[int]:
         return sum(j["L"] < distance_remaining for j in jumps)
 
 
-def get_race_leaders(rc: Dict[str, Any]) -> Set[int]:
+def get_race_leaders(rc: dict[str, Any]) -> set[int]:
     """
     Given a race change object, return the set of selection IDs of horses which are closest to
     the finishing line

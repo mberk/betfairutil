@@ -23,7 +23,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     extras_require={
         "files": ["betfairlightweight>=2.12.0", "orjson", "smart_open"],
         "data_frames": ["pandas"],
