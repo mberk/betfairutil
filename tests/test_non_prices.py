@@ -638,9 +638,9 @@ def test_is_market_book(
 
 
 def test_is_runner_book(
-    market_book: Dict[str, Any],
-    market_catalogue: Dict[str, Any],
-    race_card: Dict[str, Any],
+    market_book: dict[str, Any],
+    market_catalogue: dict[str, Any],
+    race_card: dict[str, Any],
 ):
     assert not is_runner_book(market_book)
     assert not is_runner_book(market_catalogue)
@@ -650,12 +650,12 @@ def test_is_runner_book(
     assert is_runner_book(MarketBook(**market_book).runners[0])
 
 
-def test_iterate_other_active_runners(market_book: Dict[str, Any]):
+def test_iterate_other_active_runners(market_book: dict[str, Any]):
     assert next(iterate_other_active_runners(market_book, 123))["selectionId"] == 456
     assert next(iterate_other_active_runners(market_book, 456))["selectionId"] == 123
 
 
-def test_market_book_to_data_frame(market_book: Dict[str, Any]):
+def test_market_book_to_data_frame(market_book: dict[str, Any]):
     df = market_book_to_data_frame(
         market_book, should_format_publish_time=True, should_output_runner_names=True
     )
@@ -678,9 +678,9 @@ def test_market_book_to_data_frame(market_book: Dict[str, Any]):
 
 
 def test_prices_file_to_csv_file(
-    market_definition: Dict[str, Any],
-    market_book: Dict[str, Any],
-    market_catalogue: Dict[str, Any],
+    market_definition: dict[str, Any],
+    market_book: dict[str, Any],
+    market_catalogue: dict[str, Any],
     tmp_path: Path,
 ):
     path_to_prices_file = tmp_path / f"1.123.json.gz"
@@ -768,7 +768,7 @@ def test_prices_file_to_csv_file(
 
 def test_read_prices_file(
     path_to_prices_file: Path,
-    market_catalogue: Dict[str, Any],
+    market_catalogue: dict[str, Any],
 ):
     market_books = read_prices_file(
         path_to_prices_file, market_catalogues=[market_catalogue]
@@ -781,7 +781,7 @@ def test_read_prices_file(
     assert len(market_books) == 1
 
 
-def test_read_race_file(race_change: Dict[str, Any], path_to_race_file: Path):
+def test_read_race_file(race_change: dict[str, Any], path_to_race_file: Path):
     rcs = read_race_file(path_to_race_file)
     assert len(rcs) == 1
 
@@ -793,7 +793,7 @@ def test_read_race_file(race_change: Dict[str, Any], path_to_race_file: Path):
     assert rcs[0] == race_change
 
 
-def test_remove_bet_from_runner_book(market_book: Dict[str, Any]):
+def test_remove_bet_from_runner_book(market_book: dict[str, Any]):
     runner_book = market_book["runners"][0]
     with pytest.raises(ValueError):
         remove_bet_from_runner_book(
@@ -826,7 +826,7 @@ def test_random_from_market_id():
 
 
 def test_get_final_market_definition_from_prices_file(
-    market_definition: Dict[str, Any], path_to_prices_file: Path
+    market_definition: dict[str, Any], path_to_prices_file: Path
 ):
     final_market_definition = get_final_market_definition_from_prices_file(
         path_to_prices_file
@@ -857,7 +857,7 @@ def test_get_pre_event_volume_traded_from_prices_file(
     assert volume_traded == 2
 
 
-def test_get_winners_from_market_definition(market_definition: Dict[str, Any]):
+def test_get_winners_from_market_definition(market_definition: dict[str, Any]):
     assert get_winners_from_market_definition(market_definition) == []
 
     market_definition["runners"][0]["status"] = "WINNER"
@@ -867,7 +867,7 @@ def test_get_winners_from_market_definition(market_definition: Dict[str, Any]):
 
 
 def test_get_race_change_from_race_file(
-    race_change: Dict[str, Any], path_to_race_file: Path
+    race_change: dict[str, Any], path_to_race_file: Path
 ):
     with pytest.raises(AssertionError):
         get_race_change_from_race_file(
@@ -895,9 +895,9 @@ def test_get_race_change_from_race_file(
 
 
 def test_get_market_books_from_prices_file(
-    market_definition: Dict[str, Any],
-    market_book: Dict[str, Any],
-    market_catalogue: Dict[str, Any],
+    market_definition: dict[str, Any],
+    market_book: dict[str, Any],
+    market_catalogue: dict[str, Any],
     tmp_path: Path,
 ):
     del market_definition["runners"][0]["name"]
@@ -940,9 +940,9 @@ def test_get_market_books_from_prices_file(
 
 
 def test_get_minimum_book_percentage_market_books_from_prices_file(
-    market_definition: Dict[str, Any],
-    market_book: Dict[str, Any],
-    market_catalogue: Dict[str, Any],
+    market_definition: dict[str, Any],
+    market_book: dict[str, Any],
+    market_catalogue: dict[str, Any],
     tmp_path: Path,
 ):
     del market_definition["runners"][0]["name"]
@@ -1019,7 +1019,7 @@ def test_get_minimum_book_percentage_market_books_from_prices_file(
     )
 
 
-def test_calculate_order_book_imbalance(market_book: Dict[str, Any]):
+def test_calculate_order_book_imbalance(market_book: dict[str, Any]):
     runner_book = market_book["runners"][0]
     runner_book["ex"]["availableToLay"].append({"price": 1.99, "size": 2})
 
@@ -1027,7 +1027,7 @@ def test_calculate_order_book_imbalance(market_book: Dict[str, Any]):
     assert calculate_order_book_imbalance(RunnerBook(**runner_book)) == -1.0 / 3.0
 
 
-def test_get_second_best_price_size(market_book: Dict[str, Any]):
+def test_get_second_best_price_size(market_book: dict[str, Any]):
     runner_book = market_book["runners"][0]
 
     assert get_second_best_price_size(runner_book, Side.BACK) is None
@@ -1047,7 +1047,7 @@ def test_get_second_best_price_size(market_book: Dict[str, Any]):
     assert second_best_price_size.size == 2
 
 
-def test_get_second_best_price(market_book: Dict[str, Any]):
+def test_get_second_best_price(market_book: dict[str, Any]):
     runner_book = market_book["runners"][0]
 
     assert get_second_best_price(runner_book, Side.BACK) is None
@@ -1059,7 +1059,7 @@ def test_get_second_best_price(market_book: Dict[str, Any]):
     assert get_second_best_price(RunnerBook(**runner_book), Side.BACK) == 1.97
 
 
-def test_get_market_time_as_datetime(market_book: Dict[str, Any]):
+def test_get_market_time_as_datetime(market_book: dict[str, Any]):
     assert get_market_time_as_datetime(market_book) == datetime.datetime(
         year=2022,
         month=4,
@@ -1085,7 +1085,7 @@ def test_get_market_time_as_datetime(market_book: Dict[str, Any]):
     )
 
 
-def test_get_seconds_to_market_time(market_book: Dict[str, Any]):
+def test_get_seconds_to_market_time(market_book: dict[str, Any]):
     current_time = datetime.datetime.strptime(
         "2022-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.000Z"
     ).replace(tzinfo=datetime.timezone.utc)
@@ -1108,7 +1108,7 @@ def test_get_seconds_to_market_time(market_book: Dict[str, Any]):
 
 
 def test_get_win_market_id_from_race_file(
-    race_change: Dict[str, Any], path_to_race_file: Path
+    race_change: dict[str, Any], path_to_race_file: Path
 ):
     assert get_win_market_id_from_race_file(path_to_race_file) == race_change["mid"]
 
@@ -1140,20 +1140,20 @@ def test_create_combined_market_book_and_race_change_generator(
 
 
 def test_get_bsp_from_race_result(
-    race_result: Dict[str, Any], path_to_race_result_file: Path
+    race_result: dict[str, Any], path_to_race_result_file: Path
 ):
     assert get_bsp_from_race_result(race_result) == {123: 1.5, 456: 3.0}
     assert get_bsp_from_race_result(path_to_race_result_file) == {123: 1.5, 456: 3.0}
 
 
 def test_get_winners_from_race_result(
-    race_result: Dict[str, Any], path_to_race_result_file: Path
+    race_result: dict[str, Any], path_to_race_result_file: Path
 ):
     assert get_winners_from_race_result(race_result) == [123]
     assert get_winners_from_race_result(path_to_race_result_file) == [123]
 
 
-def test_get_bsp_from_market_definition(market_definition: Dict[str, Any]):
+def test_get_bsp_from_market_definition(market_definition: dict[str, Any]):
     assert get_bsp_from_market_definition(market_definition) == {123: None, 456: None}
 
     market_definition["runners"][0]["bsp"] = 1.5
@@ -1167,7 +1167,7 @@ def test_get_bsp_from_prices_file(path_to_prices_file: Path):
 
 
 def test_get_all_market_definitions_from_prices_file(
-    path_to_prices_file: Path, market_definition: Dict[str, Any]
+    path_to_prices_file: Path, market_definition: dict[str, Any]
 ):
     assert (
         get_all_market_definitions_from_prices_file(path_to_prices_file)[0][1]
@@ -1176,7 +1176,7 @@ def test_get_all_market_definitions_from_prices_file(
 
 
 def test_get_first_market_definition_from_prices_file(
-    path_to_prices_file: Path, market_definition: Dict[str, Any]
+    path_to_prices_file: Path, market_definition: dict[str, Any]
 ):
     assert (
         get_first_market_definition_from_prices_file(path_to_prices_file)
@@ -1188,7 +1188,7 @@ def test_get_winners_from_prices_file(path_to_prices_file: Path):
     assert get_winners_from_prices_file(path_to_prices_file) == []
 
 
-def test_calculate_available_volume(market_book: Dict[str, Any]):
+def test_calculate_available_volume(market_book: dict[str, Any]):
     assert calculate_available_volume(market_book, Side.BACK, 1.05) == 2
 
     market_book["runners"][0]["ex"]["availableToBack"].append(
@@ -1227,12 +1227,12 @@ def test_get_inplay_publish_time_from_prices_file(
     )
 
 
-def test_get_is_jump_from_race_card(race_card: Dict[str, Any]):
+def test_get_is_jump_from_race_card(race_card: dict[str, Any]):
     is_jump = get_is_jump_from_race_card(race_card)
     assert is_jump
 
 
-def test_calculate_haversine_distance_between_runners(race_change: Dict[str, Any]):
+def test_calculate_haversine_distance_between_runners(race_change: dict[str, Any]):
     haversine_distance = calculate_haversine_distance_between_runners(
         race_change["rrc"][0], race_change["rrc"][0]
     )
@@ -1240,7 +1240,7 @@ def test_calculate_haversine_distance_between_runners(race_change: Dict[str, Any
     assert haversine_distance == 0
 
 
-def test_get_race_leaders(race_change: Dict[str, Any]):
+def test_get_race_leaders(race_change: dict[str, Any]):
     race_leaders = get_race_leaders(race_change)
     assert race_leaders == {race_change["rrc"][0]["id"]}
 
@@ -1249,7 +1249,7 @@ def test_get_race_leaders(race_change: Dict[str, Any]):
     assert race_leaders == set()
 
 
-def test_get_number_of_jumps_remaining(race_change: Dict[str, Any]):
+def test_get_number_of_jumps_remaining(race_change: dict[str, Any]):
     number_of_jumps_remaining = get_number_of_jumps_remaining(race_change)
     assert number_of_jumps_remaining is None
 
@@ -1258,7 +1258,7 @@ def test_get_number_of_jumps_remaining(race_change: Dict[str, Any]):
     assert number_of_jumps_remaining == 1
 
 
-def test_get_mid_price(market_book: Dict[str, Any]):
+def test_get_mid_price(market_book: dict[str, Any]):
     runner_book = get_runner_book_from_market_book(market_book, selection_id=123)
     assert get_mid_price(runner_book) is None
 
@@ -1268,8 +1268,8 @@ def test_get_mid_price(market_book: Dict[str, Any]):
 
 def test_get_total_volume_traded_from_prices_file(
     path_to_prices_file: Path,
-    market_book: Dict[str, Any],
-    market_definition: Dict[str, Any],
+    market_book: dict[str, Any],
+    market_definition: dict[str, Any],
 ):
     total_volume_traded = get_total_volume_traded_from_prices_file(path_to_prices_file)
     assert total_volume_traded == 0
@@ -1329,7 +1329,7 @@ def test_publish_time_to_datetime():
     assert publish_time_to_datetime(None) is None
 
 
-def test_datetime_to_publish_time(market_book: Dict[str, Any]):
+def test_datetime_to_publish_time(market_book: dict[str, Any]):
     assert datetime_to_publish_time(None) is None
     assert (
         datetime_to_publish_time(publish_time_to_datetime(market_book["publishTime"]))
