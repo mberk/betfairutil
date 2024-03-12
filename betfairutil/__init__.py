@@ -2171,6 +2171,15 @@ def get_inplay_publish_time_from_prices_file(
             return publish_time
 
 
+def get_inplay_bet_delay_from_prices_file(
+    path_to_prices_file: Union[str, Path]
+) -> Optional[int]:
+    g = create_market_book_generator_from_prices_file(path_to_prices_file)
+    for market_book in g:
+        if market_book["inplay"]:
+            return market_book["marketDefinition"]["betDelay"]
+
+
 def get_total_volume_traded_from_prices_file(
     path_to_prices_file: Union[str, Path], deque_len: Optional[int] = 8
 ) -> Optional[Union[int, float]]:

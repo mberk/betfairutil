@@ -36,6 +36,7 @@ from betfairutil import get_event_id_from_string
 from betfairutil import get_final_market_definition_from_prices_file
 from betfairutil import get_first_market_definition_from_prices_file
 from betfairutil import get_inplay_publish_time_from_prices_file
+from betfairutil import get_inplay_bet_delay_from_prices_file
 from betfairutil import get_is_jump_from_race_card
 from betfairutil import get_market_books_from_prices_file
 from betfairutil import get_market_id_from_string
@@ -1335,3 +1336,7 @@ def test_datetime_to_publish_time(market_book: dict[str, Any]):
         datetime_to_publish_time(publish_time_to_datetime(market_book["publishTime"]))
         == market_book["publishTime"]
     )
+
+
+def test_get_inplay_bet_delay_from_prices_file(path_to_prices_file: Path,):
+    assert get_inplay_bet_delay_from_prices_file(path_to_prices_file) == 5
