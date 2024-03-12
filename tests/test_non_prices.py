@@ -1061,7 +1061,7 @@ def test_get_second_best_price(market_book: dict[str, Any]):
 
 
 def test_get_market_time_as_datetime(market_book: dict[str, Any]):
-    assert get_market_time_as_datetime(market_book) == datetime.datetime(
+    expected = datetime.datetime(
         year=2022,
         month=4,
         day=3,
@@ -1070,19 +1070,19 @@ def test_get_market_time_as_datetime(market_book: dict[str, Any]):
         second=0,
         tzinfo=datetime.timezone.utc,
     )
-    assert get_market_time_as_datetime(
-        MarketBook(
-            **market_book,
-            market_definition=MarketDefinition(**market_book["marketDefinition"]),
+    assert get_market_time_as_datetime(market_book) == expected
+    assert (
+        get_market_time_as_datetime(MarketDefinition(**market_book["marketDefinition"]))
+        == expected
+    )
+    assert (
+        get_market_time_as_datetime(
+            MarketBook(
+                **market_book,
+                market_definition=MarketDefinition(**market_book["marketDefinition"]),
+            )
         )
-    ) == datetime.datetime(
-        year=2022,
-        month=4,
-        day=3,
-        hour=14,
-        minute=0,
-        second=0,
-        tzinfo=datetime.timezone.utc,
+        == expected
     )
 
 
@@ -1106,6 +1106,9 @@ def test_get_seconds_to_market_time(market_book: dict[str, Any]):
         )
         == 0.0
     )
+
+    with pytest.raises(ValueError):
+        get_seconds_to_market_time(MarketDefinition(**market_book["marketDefinition"]))
 
 
 def test_get_win_market_id_from_race_file(
@@ -1338,5 +1341,7 @@ def test_datetime_to_publish_time(market_book: dict[str, Any]):
     )
 
 
-def test_get_inplay_bet_delay_from_prices_file(path_to_prices_file: Path,):
+def test_get_inplay_bet_delay_from_prices_file(
+    path_to_prices_file: Path,
+):
     assert get_inplay_bet_delay_from_prices_file(path_to_prices_file) == 5
