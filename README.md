@@ -22,7 +22,7 @@ Optionally, for working with data frames:
 
 # Installation
 
-Requires Python 3.7 or above.
+Requires Python 3.9 or above.
 
 If working with Betfair prices files:
 
