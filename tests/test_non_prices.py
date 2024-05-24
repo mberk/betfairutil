@@ -811,9 +811,41 @@ def test_remove_bet_from_runner_book(market_book: dict[str, Any]):
     assert len(new_runner_book["ex"]["availableToBack"]) == 0
 
     new_runner_book = remove_bet_from_runner_book(
+        runner_book, price=1.98, size=0.75, available_side=Side.BACK
+    )
+    assert new_runner_book["ex"]["availableToBack"][0]["price"] == 1.98
+    assert new_runner_book["ex"]["availableToBack"][0]["size"] == 0.25
+
+    new_runner_book = remove_bet_from_runner_book(
         RunnerBook(**runner_book), price=1.98, size=1, available_side=Side.BACK
     )
     assert len(new_runner_book.ex.available_to_back) == 0
+
+    new_runner_book = remove_bet_from_runner_book(
+        RunnerBook(**runner_book), price=1.98, size=0.75, available_side=Side.BACK
+    )
+    assert new_runner_book.ex.available_to_back[0].price == 1.98
+    assert new_runner_book.ex.available_to_back[0].size == 0.25
+
+    original_price_sizes = runner_book["ex"]["availableToBack"]
+    runner_book["ex"]["availableToBack"] = []
+    new_runner_book = remove_bet_from_runner_book(
+        runner_book, price=1.98, size=1, available_side=Side.BACK
+    )
+    assert new_runner_book == runner_book
+
+    runner_book = RunnerBook(**runner_book)
+    runner_book.ex.available_to_back = original_price_sizes
+    new_runner_book = remove_bet_from_runner_book(
+        runner_book, price=1.98, size=1, available_side=Side.BACK
+    )
+    assert len(new_runner_book.ex.available_to_back) == 0
+
+    new_runner_book = remove_bet_from_runner_book(
+        runner_book, price=1.98, size=0.75, available_side=Side.BACK
+    )
+    assert new_runner_book.ex.available_to_back[0]["price"] == 1.98
+    assert new_runner_book["ex"]["availableToBack"][0]["size"] == 0.25
 
 
 def test_random_from_market_id():
