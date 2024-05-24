@@ -845,7 +845,7 @@ def test_remove_bet_from_runner_book(market_book: dict[str, Any]):
         runner_book, price=1.98, size=0.75, available_side=Side.BACK
     )
     assert new_runner_book.ex.available_to_back[0]["price"] == 1.98
-    assert new_runner_book["ex"]["availableToBack"][0]["size"] == 0.25
+    assert new_runner_book.ex.available_to_back[0]["size"] == 0.25
 
 
 def test_random_from_market_id():
