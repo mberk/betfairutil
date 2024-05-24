@@ -2938,9 +2938,9 @@ def get_minimum_book_percentage_market_books_from_prices_file(
                     > previous_market_book_book_percentage
                 ):
                     result[window] = previous_market_book
-                    current_best_book_percentages[
-                        window
-                    ] = previous_market_book_book_percentage
+                    current_best_book_percentages[window] = (
+                        previous_market_book_book_percentage
+                    )
 
         previous_market_book = market_book
         previous_market_book_book_percentage = calculate_book_percentage(
@@ -3140,38 +3140,47 @@ def remove_bet_from_runner_book(
     """
     runner_book = deepcopy(runner_book)
     if isinstance(runner_book, dict):
-        for price_size in runner_book["ex"][available_side.ex_key]:
-            if price_size["price"] == price and price_size["size"] < size:
-                raise ValueError(
-                    f'size = {size} but only {price_size["size"]} available to {available_side.ex_key} at {price_size["price"]}'
-                )
-
-        runner_book["ex"][available_side.ex_key] = [
-            {
-                "price": price_size["price"],
-                "size": price_size["size"]
-                - (size if price_size["price"] == price else 0),
-            }
-            for price_size in runner_book["ex"][available_side.ex_key]
-            # If price_size['price'] == price and price_size['size'] == size then it should be removed from the list completely
-            if price_size["price"] != price or price_size["size"] != size
-        ]
+        ex = runner_book["ex"]
+        price_sizes = ex[available_side.ex_key]
+        assignment_fun = dict.__setitem__
+        assignment_field = available_side.ex_key
     else:
-        for price_size in getattr(runner_book.ex, available_side.ex_attribute):
-            if price_size.price == price and price_size.size < size:
-                raise ValueError(
-                    f"size = {size} but only {price_size.size} available to {available_side.ex_key} at {price_size.price}"
-                )
+        ex = runner_book.ex
+        price_sizes = getattr(ex, available_side.ex_attribute)
+        assignment_fun = setattr
+        assignment_field = available_side.ex_attribute
 
-        setattr(
-            runner_book.ex,
-            available_side.ex_attribute,
-            [
-                PriceSize(price=price_size.price, size=price_size.size)
-                for price_size in getattr(runner_book.ex, available_side.ex_attribute)
-                if price_size.price != price or price_size.size != size
-            ],
+    if len(price_sizes) == 0:
+        return runner_book
+
+    if isinstance(price_sizes[0], dict):
+        constructor = dict
+        accessor_fun = dict.__getitem__
+    else:
+        constructor = PriceSize
+        accessor_fun = getattr
+
+    # Validation.
+    for price_size in price_sizes:
+        _price = accessor_fun(price_size, "price")
+        _size = accessor_fun(price_size, "size")
+        if _price == price and _size < size:
+            raise ValueError(
+                f"size = {size} but only {_size} available to {available_side.ex_key} at {_price}"
+            )
+
+    new_price_sizes = [
+        constructor(
+            price=accessor_fun(price_size, "price"),
+            size=accessor_fun(price_size, "size")
+            - (size if accessor_fun(price_size, "price") == price else 0),
         )
+        for price_size in price_sizes
+        if accessor_fun(price_size, "price") != price
+        or accessor_fun(price_size, "size") != size
+    ]
+
+    assignment_fun(ex, assignment_field, new_price_sizes)
     return runner_book
 
 
