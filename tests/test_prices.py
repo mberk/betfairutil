@@ -10,6 +10,7 @@ from betfairutil import get_inside_best_price
 from betfairutil import get_outside_best_price
 from betfairutil import get_spread
 from betfairutil import increment_price
+from betfairutil import is_market_one_tick_wide
 from betfairutil import is_price_the_same_or_better
 from betfairutil import is_price_worse
 from betfairutil import make_price_betfair_valid
@@ -70,6 +71,35 @@ def test_get_spread(runner: Dict[str, Any], use_runner_book_objects: bool):
         runner["ex"]["availableToLay"][0]["price"] = price
         assert (
             get_spread(RunnerBook(**runner) if use_runner_book_objects else runner) == i
+        )
+
+
+@pytest.mark.parametrize("use_runner_book_objects", [False, True])
+def test_is_market_one_tick_wide(runner: Dict[str, Any], use_runner_book_objects: bool):
+    assert not is_market_one_tick_wide(
+        RunnerBook(**runner) if use_runner_book_objects else runner
+    )
+
+    runner["ex"]["availableToBack"].append({"price": 1.01, "size": 1})
+    assert not is_market_one_tick_wide(
+        RunnerBook(**runner) if use_runner_book_objects else runner
+    )
+
+    runner["ex"]["availableToLay"].append({"size": 1})
+    for i, price in enumerate(BETFAIR_PRICES):
+        if price == 1.01:
+            continue
+        runner["ex"]["availableToLay"][0]["price"] = price
+        assert (
+            price == 1.02
+            and is_market_one_tick_wide(
+                RunnerBook(**runner) if use_runner_book_objects else runner
+            )
+        ) or (
+            price != 1.02
+            and not is_market_one_tick_wide(
+                RunnerBook(**runner) if use_runner_book_objects else runner
+            )
         )
 
 

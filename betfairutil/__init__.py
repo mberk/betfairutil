@@ -1951,6 +1951,11 @@ def get_spread(runner: Union[dict[str, Any], RunnerBook]) -> Optional[int]:
     return calculate_price_difference(best_lay_price, best_back_price)
 
 
+def is_market_one_tick_wide(runner: Union[dict[str, Any], RunnerBook]) -> bool:
+    spread = get_spread(runner)
+    return spread == 1
+
+
 def get_market_id_from_string(
     s: str, as_integer: bool = False
 ) -> Optional[Union[str, int]]:
