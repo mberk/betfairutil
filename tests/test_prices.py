@@ -10,6 +10,7 @@ from betfairutil import get_inside_best_price
 from betfairutil import get_outside_best_price
 from betfairutil import get_spread
 from betfairutil import increment_price
+from betfairutil import is_market_contiguous
 from betfairutil import is_market_one_tick_wide
 from betfairutil import is_price_the_same_or_better
 from betfairutil import is_price_worse
@@ -254,3 +255,37 @@ def test_make_price_betfair_valid():
             assert make_price_betfair_valid(price + 0.001, Side.BACK) == next_price
         if price != 1.01:
             assert make_price_betfair_valid(price - 0.001, Side.LAY) == prev_price
+
+
+@pytest.mark.parametrize("use_runner_book_objects", [False, True])
+def test_is_market_contiguous(runner: Dict[str, Any], use_runner_book_objects: bool):
+    assert (
+        is_market_contiguous(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+        )
+        is None
+    )
+
+    runner["ex"]["availableToBack"].append({"price": 1.03, "size": 1})
+
+    assert (
+        is_market_contiguous(
+            RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+        )
+        is None
+    )
+
+    runner["ex"]["availableToBack"].append({"price": 1.02, "size": 1})
+
+    assert is_market_contiguous(
+        RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+    )
+
+    runner["ex"]["availableToBack"][1]["price"] = 1.01
+
+    assert not is_market_contiguous(
+        RunnerBook(**runner) if use_runner_book_objects else runner, Side.BACK
+    )
+
+    with pytest.raises(ValueError):
+        is_market_contiguous(runner, Side.BACK, max_depth=0)

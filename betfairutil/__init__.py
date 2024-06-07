@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import (
     Any,
     Generator,
+    Iterator,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -1878,6 +1879,66 @@ def get_second_best_price(
         return second_best_price_size["price"]
 
 
+def iterate_price_sizes(
+    runner: Union[dict[str, Any], RunnerBook], side: Side
+) -> Iterator[Union[dict[str, Any], PriceSize]]:
+    if isinstance(runner, RunnerBook):
+        _iter = iter(getattr(runner.ex, side.ex_attribute))
+    else:
+        _iter = iter(runner.get("ex", {}).get(side.ex_key, []))
+
+    return _iter
+
+
+def iterate_prices(
+    runner: Union[dict[str, Any], RunnerBook], side: Side
+) -> Generator[Union[int, float], None, None]:
+    if isinstance(runner, RunnerBook):
+        price_sizes = getattr(runner.ex, side.ex_attribute)
+    else:
+        price_sizes = runner.get("ex", {}).get(side.ex_key, [])
+
+    if len(price_sizes) > 0:
+        if isinstance(price_sizes[0], dict):
+            accessor_fun = dict.__getitem__
+        else:
+            accessor_fun = getattr
+        for price_size in price_sizes:
+            yield accessor_fun(price_size, "price")
+
+
+def is_market_contiguous(
+    runner: Union[dict[str, Any], RunnerBook],
+    side: Side,
+    max_depth: Optional[int] = None,
+) -> Optional[bool]:
+    """
+    Check whether there are no gaps between ladder levels on one side of a runner book. Optionally restrict the check to a maximum number of ladder levels
+
+    :param runner: A runner book as either a betfairlightweight RunnerBook object or a dictionary
+    :param side: Indicate whether to check the best available back or lay prices for gaps
+    :param max_depth: Optionally restrict the check up to the i-th ladder level (0-indexed)
+    :return: If the market is empty or only has one level the function returns None as the idea of it being contiguous under these conditions is nonsensical. Otherwise, it will return True if all of the prices are successive points on the Betfair price ladder and False otherwise
+    """
+    if max_depth is not None and max_depth < 1:
+        raise ValueError(f"If given, max_depth must be 1 or greater")
+
+    prices = [
+        price
+        for depth, price in enumerate(iterate_prices(runner, side))
+        if max_depth is None or depth <= max_depth
+    ]
+
+    if len(prices) < 2:
+        return
+
+    for price, next_price in zip(prices, prices[1:]):
+        if side.next_worse_price_map[price] != next_price:
+            return False
+
+    return True
+
+
 def get_best_price_with_rollup(
     runner: Union[dict[str, Any], RunnerBook], side: Side, rollup: Union[int, float]
 ) -> Optional[Union[int, float]]:
@@ -1889,13 +1950,8 @@ def get_best_price_with_rollup(
     :param rollup: Any prices with volumes under this amount will be rolled up to lower levels in the order book
     :return: The best price if one exists otherwise None
     """
-    if isinstance(runner, RunnerBook):
-        _iter = iter(getattr(runner.ex, side.ex_attribute))
-    else:
-        _iter = iter(runner.get("ex", {}).get(side.ex_key, []))
-
     cumulative_size = 0
-    for price_size in _iter:
+    for price_size in iterate_price_sizes(runner, side):
         if isinstance(price_size, dict):
             price = price_size["price"]
             size = price_size["size"]
