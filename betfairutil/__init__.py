@@ -2,13 +2,13 @@ import datetime
 import enum
 import heapq
 import itertools
+import pickle
 import re
 from bisect import bisect_left
 from bisect import bisect_right
 from collections import deque
 from collections.abc import Mapping
 from collections.abc import Sequence
-from copy import deepcopy
 from math import asin
 from math import cos
 from math import radians
@@ -3199,7 +3199,7 @@ def remove_bet_from_runner_book(
     :return: A new runner book with the bet removed. The type of the return value will reflect the type of runner_book. If the given price is not available on the given side then the new runner book will be identical to runner_book
     :raises: ValueError if size is greater than the size present in the order book
     """
-    runner_book = deepcopy(runner_book)
+    runner_book = pickle.loads(pickle.dumps(runner_book))
     if isinstance(runner_book, dict):
         ex = runner_book["ex"]
         price_sizes = ex[available_side.ex_key]
