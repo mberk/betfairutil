@@ -15,7 +15,10 @@ setup(
     author="Maurice Berk",
     author_email="maurice@mauriceberk.com",
     url="https://github.com/mberk/betfairutil",
-    packages=["betfairutil"],
+    packages=[
+        "betfairutil",
+        "betfairutil.examples",
+    ],
     install_requires=requires,
     tests_require=tests_require,
     classifiers=[
