@@ -35,6 +35,8 @@ from betfairlightweight.resources.bettingresources import PriceSize
 from betfairlightweight.resources.bettingresources import RunnerBook
 from betfairlightweight.resources.streamingresources import MarketDefinition
 
+from .examples import *
+
 BETFAIR_PRICES = [
     1.01,
     1.02,
