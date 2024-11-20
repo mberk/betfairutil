@@ -3336,3 +3336,13 @@ def get_race_leaders(rc: dict[str, Any]) -> set[int]:
         }
     else:
         return set()
+
+
+def virtualise_two_runner_price(
+    price: Union[int, float], side: Side, raw: bool = False
+) -> Union[int, float]:
+    raw_price = 1.0 / (1.0 - 1.0 / price)
+    if raw:
+        return raw_price
+    virtual_price = make_price_betfair_valid(raw_price, side.other_side)
+    return virtual_price
