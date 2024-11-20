@@ -16,6 +16,7 @@ from betfairutil import is_price_the_same_or_better
 from betfairutil import is_price_worse
 from betfairutil import make_price_betfair_valid
 from betfairutil import Side
+from betfairutil import virtualise_two_runner_price
 
 
 @pytest.fixture
@@ -289,3 +290,13 @@ def test_is_market_contiguous(runner: Dict[str, Any], use_runner_book_objects: b
 
     with pytest.raises(ValueError):
         is_market_contiguous(runner, Side.BACK, max_depth=0)
+
+
+def test_virtualise_two_runner_price():
+    assert virtualise_two_runner_price(1.01, Side.BACK) == 100
+    assert virtualise_two_runner_price(1.01, Side.BACK, raw=True) == pytest.approx(101)
+
+    assert virtualise_two_runner_price(1000, Side.LAY) == 1.01
+    assert virtualise_two_runner_price(1000, Side.LAY, raw=True) == pytest.approx(
+        1.001001
+    )
