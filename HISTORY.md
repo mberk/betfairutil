@@ -1,5 +1,26 @@
 # Release History
 
+# 0.7.0 - 2025-01-09
+
+### Added
+
+* Add get_inplay_bet_delay_from_prices_file function
+* Add is_market_one_tick_wide function
+* Add is_market_contiguous function
+* Add examples
+* Add virtualise_two_runner_price
+
+### Changed
+
+* Drop support for Python 3.7 and 3.8
+* Enable get_market_time_as_datetime to work on market definitions as well as market books
+* Enable get_seconds_to_market_time to work on market definitions as well as market books
+* Replace deepcopy with pickle in remove_bet_from_runner_book
+
+### Fixed
+
+* Handle RunnerBooks with dictionary priceSizes in remove_bet_from_runner_book [#47](https://github.com/mberk/betfairutil/issues/47)
+
 # 0.6.3 - 2023-08-31
 
 ### Changed
