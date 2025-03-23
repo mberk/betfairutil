@@ -3349,10 +3349,10 @@ def virtualise_two_runner_price(
 
 
 def virtualise_market_book(
-    market_book: Union[Dict[str, Any], MarketBook],
+    market_book: Union[dict[str, Any], MarketBook],
     rollup: Union[int, float] = 1,
     ladder_levels: int = 10,
-) -> Union[Dict[str, Any], MarketBook]:
+) -> Union[dict[str, Any], MarketBook]:
     if type(market_book) is dict:
         return_type = dict
     else:
