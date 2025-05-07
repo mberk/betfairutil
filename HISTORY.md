@@ -1,5 +1,11 @@
 # Release History
 
+# 0.7.1 - 2025-05-07
+
+### Fixed
+
+* Handle MarketDefinition objects in get_bsp_from_market_definition and get_winners_from_market_definition
+
 # 0.7.0 - 2025-01-09
 
 ### Added
