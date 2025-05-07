@@ -892,11 +892,17 @@ def test_get_pre_event_volume_traded_from_prices_file(
 
 def test_get_winners_from_market_definition(market_definition: dict[str, Any]):
     assert get_winners_from_market_definition(market_definition) == []
+    assert (
+        get_winners_from_market_definition(MarketDefinition(**market_definition)) == []
+    )
 
     market_definition["runners"][0]["status"] = "WINNER"
     assert get_winners_from_market_definition(market_definition) == [
         market_definition["runners"][0]["id"]
     ]
+    assert get_winners_from_market_definition(
+        MarketDefinition(**market_definition)
+    ) == [market_definition["runners"][0]["id"]]
 
 
 def test_get_race_change_from_race_file(
@@ -1191,11 +1197,19 @@ def test_get_winners_from_race_result(
 
 def test_get_bsp_from_market_definition(market_definition: dict[str, Any]):
     assert get_bsp_from_market_definition(market_definition) == {123: None, 456: None}
+    assert get_bsp_from_market_definition(MarketDefinition(**market_definition)) == {
+        123: None,
+        456: None,
+    }
 
     market_definition["runners"][0]["bsp"] = 1.5
     market_definition["runners"][1]["bsp"] = 3.0
 
     assert get_bsp_from_market_definition(market_definition) == {123: 1.5, 456: 3.0}
+    assert get_bsp_from_market_definition(MarketDefinition(**market_definition)) == {
+        123: 1.5,
+        456: 3.0,
+    }
 
 
 def test_get_bsp_from_prices_file(path_to_prices_file: Path):
